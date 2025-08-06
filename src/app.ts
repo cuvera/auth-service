@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import session from 'express-session';
 import connectDB from './config/database';
 import passport from './config/passport';
 import userRoutes from './routes/userRoutes';
@@ -22,15 +23,57 @@ connectDB();
 
 // Security middleware
 app.use(helmet());
-app.use(cors());
+
+// CORS configuration for local development
+const corsOptions = {
+    origin: [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:5173', // Vite default
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:5173',
+        'https://accounts.google.com/',
+        'http://localhost:5173/'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+        'Origin',
+        'X-Requested-With',
+        'Content-Type',
+        'Accept',
+        'Authorization',
+        'Cache-Control',
+        'Pragma'
+    ],
+    exposedHeaders: ['set-cookie']
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+// Session configuration for OAuth
+app.use(session({
+    secret: process.env.JWT_SECRET || 'your-session-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
+
 // Initialize Passport
 app.use(passport.initialize());
+app.use(passport.session());
 
 // Setup Swagger documentation
 setupSwagger(app);

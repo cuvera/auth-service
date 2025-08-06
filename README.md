@@ -1,4 +1,4 @@
-# Cuvera-core API
+# Cuvera-auth API
 
 A complete REST API built with Node.js, Express.js, MongoDB, and TypeScript following MVC architecture.
 

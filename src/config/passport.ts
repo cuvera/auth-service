@@ -5,6 +5,21 @@ import { Strategy as SamlStrategy } from 'passport-saml';
 import User from '../models/User';
 import { IJwtPayload } from '../interfaces';
 
+// Serialize user for session
+passport.serializeUser((user: any, done) => {
+    done(null, user._id);
+});
+
+// Deserialize user from session
+passport.deserializeUser(async (id: string, done) => {
+    try {
+        const user = await User.findById(id);
+        done(null, user);
+    } catch (error) {
+        done(error);
+    }
+});
+
 // Type declaration to fix SAML strategy compatibility
 declare module 'passport' {
     interface AuthenticateOptions {
@@ -42,12 +57,13 @@ passport.use(
 
 // Google OAuth Strategy
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    console.log("process.env.GOOGLE_CALLBACK_URL", process.env.GOOGLE_CALLBACK_URL)
     passport.use(
         new GoogleStrategy(
             {
                 clientID: process.env.GOOGLE_CLIENT_ID,
                 clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-                callbackURL: process.env.GOOGLE_CALLBACK_URL || '/api/v1/auth/google/callback',
+                callbackURL: process.env.GOOGLE_CALLBACK_URL,
             },
             async (accessToken, refreshToken, profile, done) => {
                 try {

@@ -6,7 +6,7 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Cuvera-core API',
+      title: 'Cuvera-auth-service API',
       version: '1.0.0',
       description: 'A simple Express API with MongoDB and TypeScript',
       contact: {

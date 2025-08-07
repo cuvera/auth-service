@@ -43,6 +43,15 @@ const userSchema = new Schema<IUser>(
       enum: ['local', 'google', 'saml'],
       default: 'local',
     },
+    tenantId: {
+      type: String,
+      default: 'default',
+      required: true,
+    },
+    roles:  {
+      type: [String],
+      default: ['user'],
+    },
   },
   {
     timestamps: true,

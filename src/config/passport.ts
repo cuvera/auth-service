@@ -4,6 +4,8 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as SamlStrategy } from 'passport-saml';
 import User from '../models/User';
 import { IJwtPayload } from '../interfaces';
+import fs from 'fs';
+import path from 'path';
 
 // Serialize user for session
 passport.serializeUser((user: any, done) => {
@@ -57,7 +59,6 @@ passport.use(
 
 // Google OAuth Strategy
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    console.log("process.env.GOOGLE_CALLBACK_URL", process.env.GOOGLE_CALLBACK_URL)
     passport.use(
         new GoogleStrategy(
             {
@@ -106,18 +107,19 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 // SAML Strategy
-if (process.env.SAML_ENTRY_POINT && process.env.SAML_ISSUER && process.env.SAML_CERT) {
+if (process.env.SAML_ENTRY_POINT && process.env.SAML_ISSUER) {
+    const idpCert = fs.readFileSync(
+        path.resolve(process.cwd(), 'src', 'certs', 'MySAMLApp.pem'),
+        'utf-8'
+      );
+      
     const samlConfig: any = {
         entryPoint: process.env.SAML_ENTRY_POINT,
         issuer: process.env.SAML_ISSUER,
-        callbackUrl: process.env.SAML_CALLBACK_URL || '/api/v1/auth/saml/callback',
-        cert: process.env.SAML_CERT,
-        // Additional SAML configuration
-        identifierFormat: null,
-        validateInResponseTo: false,
-        disableRequestedAuthnContext: true,
+        cert: idpCert,
+        signatureAlgorithm: 'sha256',
+      
     };
-
     // Add optional properties only if they exist
     if (process.env.SAML_PRIVATE_KEY) {
         samlConfig.decryptionPvk = process.env.SAML_PRIVATE_KEY;

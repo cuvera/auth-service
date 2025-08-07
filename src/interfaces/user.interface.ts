@@ -12,6 +12,8 @@ export interface IUser extends Document {
     createdAt: Date;
     updatedAt: Date;
     comparePassword(candidatePassword: string): Promise<boolean>;
+    tenantId: string;
+    roles: string[];
 }
 
 export interface ICreateUserRequest {

@@ -147,9 +147,9 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
 
         res.cookie('refreshToken', tokens.refreshToken, cookieOptions);
 
-        // Redirect to frontend with access token
+        // Redirect to frontend login page with access token
         const frontendUrl = process.env.FRONTEND_URL;
-        res.redirect(`${frontendUrl}/auth/success?token=${tokens.accessToken}`);
+        res.redirect(`${frontendUrl}/login?token=${tokens.accessToken}`);
     });
 });
 
@@ -208,7 +208,6 @@ export const samlCallback = catchAsync(async (req: Request, res: Response, next:
 
         // Redirect to frontend with access token
         const frontendUrl = process.env.FRONTEND_URL;
-        console.log('Redirecting to frontend with access token', tokens.accessToken);
         res.redirect(`${frontendUrl}/auth/success?token=${tokens.accessToken}`);
     });
 });

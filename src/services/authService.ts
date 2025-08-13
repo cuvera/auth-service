@@ -26,6 +26,8 @@ export class AuthService {
         const tokens = createTokens({
             id: user._id.toString(),
             email: user.email,
+            name: user.name, 
+            tenantId: user.tenantId
         });
 
         return { user, tokens };
@@ -44,6 +46,9 @@ export class AuthService {
         const tokens = createTokens({
             id: user._id.toString(),
             email: user.email,
+            name: user.name,
+            tenantId: user.tenantId
+
         });
 
         return { user, tokens };
@@ -64,6 +69,9 @@ export class AuthService {
             const tokens = createTokens({
                 id: user._id.toString(),
                 email: user.email,
+                name: user.name,
+                tenantId: user.tenantId
+
             });
 
             return tokens;

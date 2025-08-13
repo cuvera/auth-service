@@ -74,6 +74,9 @@ export class PassportAuthService {
         const tokens = createTokens({
             id: user._id.toString(),
             email: user.email,
+            name: user.name,
+            tenantId: user.tenantId
+
         });
 
         return { user, tokens };

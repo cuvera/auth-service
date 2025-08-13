@@ -155,12 +155,37 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
 
 // SAML Routes
 export const samlAuth = catchAsync(async (req: Request, res: Response, next: Function) => {
+    // Check if SAML is properly configured
+    if (!passportAuthService.isSamlConfigured()) {
+        return res.status(503).json({
+            status: 'error',
+            message: 'SAML authentication is not available. Please check server configuration.',
+            error: {
+                statusCode: 503,
+                status: 'error'
+            }
+        });
+    }
+    
     return passportAuthService.authenticateSaml()(req, res, next);
 });
 
 export const samlCallback = catchAsync(async (req: Request, res: Response, next: Function) => {
+    // Check if SAML is properly configured
+    if (!passportAuthService.isSamlConfigured()) {
+        return res.status(503).json({
+            status: 'error',
+            message: 'SAML authentication is not available. Please check server configuration.',
+            error: {
+                statusCode: 503,
+                status: 'error'
+            }
+        });
+    }
+    
     passportAuthService.authenticateSamlCallback()(req, res, (err: any) => {
         if (err) {
+            console.error('SAML callback error:', err);
             return res.redirect(`${process.env.FRONTEND_URL}/login?error=saml_auth_failed`);
         }
 
@@ -183,6 +208,7 @@ export const samlCallback = catchAsync(async (req: Request, res: Response, next:
 
         // Redirect to frontend with access token
         const frontendUrl = process.env.FRONTEND_URL;
+        console.log('Redirecting to frontend with access token', tokens.accessToken);
         res.redirect(`${frontendUrl}/auth/success?token=${tokens.accessToken}`);
     });
 });

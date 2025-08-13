@@ -108,68 +108,108 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 // SAML Strategy
 if (process.env.SAML_ENTRY_POINT && process.env.SAML_ISSUER) {
-    const idpCert = fs.readFileSync(
-        path.resolve(process.cwd(), 'src', 'certs', 'MySAMLApp.pem'),
-        'utf-8'
-      );
-      
-    const samlConfig: any = {
-        entryPoint: process.env.SAML_ENTRY_POINT,
-        issuer: process.env.SAML_ISSUER,
-        cert: idpCert,
-        signatureAlgorithm: 'sha256',
-      
-    };
-    // Add optional properties only if they exist
-    if (process.env.SAML_PRIVATE_KEY) {
-        samlConfig.decryptionPvk = process.env.SAML_PRIVATE_KEY;
-        samlConfig.privateCert = process.env.SAML_PRIVATE_KEY;
+    let idpCert: string | undefined;
+    let canCreateSamlStrategy = false;
+
+    try {
+        // Try to read the certificate file
+        const certPath = path.resolve(process.cwd(), 'src', 'certs', 'MySAMLApp.pem');
+        if (fs.existsSync(certPath)) {
+            idpCert = fs.readFileSync(certPath, 'utf-8');
+            canCreateSamlStrategy = true;
+        } else {
+            // Use a placeholder or skip SAML configuration
+            console.warn('SAML authentication will not be available due to missing certificate');
+        }
+    } catch (error) {
+        console.warn('SAML authentication will not be available due to certificate error');
     }
 
-    passport.use(
-        'saml',
-        new (SamlStrategy as any)(
-            samlConfig,
-            async (samlProfile: any, done: any) => {
-                try {
-                    const email = samlProfile.email || samlProfile.nameID;
-                    const name = samlProfile.displayName || samlProfile.name || email;
+    // Only create SAML strategy if we have a valid certificate
+    if (canCreateSamlStrategy && idpCert) {
+        const samlConfig: any = {
+            entryPoint: process.env.SAML_ENTRY_POINT,
+            issuer: process.env.SAML_ISSUER,
+            cert: idpCert,
+            signatureAlgorithm: 'sha256',
+            callbackUrl: process.env.SAML_CALLBACK_URL || `${process.env.API_BASE_URL}/api/v1/auth/saml/callback`,
+            validateInResponseTo: false,
+            requestIdExpirationPeriodMs: 28800000, // 8 hours
+            acceptedClockSkewMs: 300000, // 5 minutes
+            disableRequestedAuthnContext: true,
+            forceAuthn: false,
+            passive: false,
+            skipRequestCompression: false,
+            authnRequestBinding: 'HTTP-Redirect',
+            // Explicitly disable logout handling
+            logoutUrl: null,
+            logoutCallbackUrl: null,
+            // Additional options to prevent logout request processing
+            wantAssertionsSigned: false,
+            wantAuthnResponseSigned: false,
+            // Protocol binding for authentication requests
+            protocolBinding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+        };
 
-                    // Check if user already exists with this SAML ID
-                    const existingUser = await User.findOne({ samlId: samlProfile.nameID });
+        // Add optional properties only if they exist
 
-                    if (existingUser) {
-                        return done(null, existingUser);
+
+        passport.use(
+            'saml',
+            new (SamlStrategy as any)(
+                samlConfig,
+                async (samlProfile: any, done: any) => {
+                    try {
+                        const name = samlProfile['http://schemas.microsoft.com/identity/claims/displayname'] ||
+                            samlProfile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+                            samlProfile.nameID;
+                        const email = samlProfile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
+                            samlProfile.email;
+
+                        let role = samlProfile['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
+                            samlProfile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role'];
+
+                        if (!role && samlProfile.attributes) {
+                            const attrs = samlProfile.attributes as Record<string, unknown>;
+                            role = attrs['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
+                                attrs['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role'];
+                        }
+
+                        // Check if user already exists with this SAML ID
+                        const existingUser = await User.findOne({ email});
+                        if (existingUser) {
+                            return done(null, existingUser);
+                        }
+
+                        // Check if user exists with the same email
+                        const userByEmail = await User.findOne({ email });
+
+                        if (userByEmail) {
+                            // Link SAML account to existing user
+                            userByEmail.samlId = samlProfile.nameID;
+                            await userByEmail.save();
+                            return done(null, userByEmail);
+                        }
+
+                        // Create new user
+                        const newUser = new User({
+                            samlId: samlProfile.nameID,
+                            name,
+                            email,
+                            provider: 'saml',
+                            // Generate a random password for SAML users
+                            password: Math.random().toString(36).slice(-8),
+                        });
+
+                        await newUser.save();
+                        return done(null, newUser);
+                    } catch (error) {
+                        return done(error);
                     }
-
-                    // Check if user exists with the same email
-                    const userByEmail = await User.findOne({ email });
-
-                    if (userByEmail) {
-                        // Link SAML account to existing user
-                        userByEmail.samlId = samlProfile.nameID;
-                        await userByEmail.save();
-                        return done(null, userByEmail);
-                    }
-
-                    // Create new user
-                    const newUser = new User({
-                        samlId: samlProfile.nameID,
-                        name,
-                        email,
-                        provider: 'saml',
-                        // Generate a random password for SAML users
-                        password: Math.random().toString(36).slice(-8),
-                    });
-
-                    await newUser.save();
-                    return done(null, newUser);
-                } catch (error) {
-                    return done(error);
                 }
-            }
-        )
-    );
+            )
+        );
+    }
 }
 
 export default passport;

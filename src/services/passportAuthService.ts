@@ -106,7 +106,7 @@
 
 
 import { Request, Response } from 'express';
-import passport from 'passport';
+import passport from '../config/passport';
 import { createTokens } from '../utils/jwt';
 import { AppError } from '../utils/appError';
 import { IUser, ITokens } from '../interfaces';
@@ -129,11 +129,43 @@ export class PassportAuthService {
 
     // SAML authentication wrapper
     authenticateSaml() {
-        console.log('Initiating SAML authentication');
-        return passport.authenticate('saml', {
-            session: false,
-            failureRedirect: `${process.env.FRONTEND_URL}/login?error=saml_auth_failed`,
-        });
+        return (req: Request, res: Response, next: Function) => {
+            console.log('SAML authentication initiated');
+            console.log('Request method:', req.method);
+            console.log('Request URL:', req.url);
+            console.log('Query params:', req.query);
+            
+            try {
+                passport.authenticate('saml', {
+                    session: false,
+                })(req, res, (err: any) => {
+                    if (err) {
+                        console.error('SAML authentication error:', err);
+                        return res.status(500).json({
+                            status: 'error',
+                            message: 'SAML authentication initialization failed',
+                            error: {
+                                statusCode: 500,
+                                status: 'error',
+                                details: err.message
+                            }
+                        });
+                    }
+                    console.log('SAML authentication successful, proceeding...');
+                    next();
+                });
+            } catch (error) {
+                console.error('SAML authentication catch error:', error);
+                return res.status(500).json({
+                    status: 'error',
+                    message: 'SAML authentication initialization failed',
+                    error: {
+                        statusCode: 500,
+                        status: 'error'
+                    }
+                });
+            }
+        };
     }
 
     // SAML callback wrapper
@@ -153,6 +185,9 @@ export class PassportAuthService {
         const tokens = createTokens({
             id: user._id.toString(),
             email: user.email,
+            name: user.name,
+            tenantId: user.tenantId
+
         });
         return { user, tokens };
     }
@@ -164,11 +199,24 @@ export class PassportAuthService {
 
     // Check if SAML is configured
     isSamlConfigured(): boolean {
-        console.log('Checking SAML configuration:', {
-            hasEntryPoint: !!process.env.SAML_ENTRY_POINT,
-            hasIssuer: !!process.env.SAML_ISSUER
-        });
-        return !!(process.env.SAML_ENTRY_POINT && process.env.SAML_ISSUER);
+        try {
+            // Check if required environment variables exist
+            const hasRequiredEnv = !!(process.env.SAML_ENTRY_POINT && process.env.SAML_ISSUER);
+
+            if (!hasRequiredEnv) {
+                return false;
+            }
+
+            // Check if certificate file exists
+            const fs = require('fs');
+            const path = require('path');
+            const certPath = path.resolve(process.cwd(), 'src', 'certs', 'MySAMLApp.pem');
+
+            return fs.existsSync(certPath);
+        } catch (error) {
+            console.error('Error checking SAML configuration:', error);
+            return false;
+        }
     }
 
     // Get available authentication providers

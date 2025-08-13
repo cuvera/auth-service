@@ -27,6 +27,8 @@ export interface IAuthResponse {
 export interface IJwtPayload {
     id: string;
     email: string;
+    name: string;
+    tenantId: string;
     iat?: number;
     exp?: number;
 }

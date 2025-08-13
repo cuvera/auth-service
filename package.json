@@ -21,6 +21,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@cuvera/commons": "1.1.0",
     "@types/express-session": "^1.18.2",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
@@ -38,7 +39,9 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
     "validator": "^13.11.0",
-    "@cuvera/commons": "1.1.0"
+    "xml-crypto": "^6.1.2",
+    "xml2js": "^0.6.2",
+    "xmldom": "^0.6.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

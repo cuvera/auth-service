@@ -27,7 +27,8 @@ export class AuthService {
             id: user._id.toString(),
             email: user.email,
             name: user.name, 
-            tenantId: user.tenantId
+            tenantId: user.tenantId,
+            roles: user.roles
         });
 
         return { user, tokens };
@@ -47,13 +48,13 @@ export class AuthService {
             id: user._id.toString(),
             email: user.email,
             name: user.name,
-            tenantId: user.tenantId
-
+            tenantId: user.tenantId,
+            roles: user.roles
+ 
         });
 
         return { user, tokens };
     }
-
     async refreshToken(refreshToken: string): Promise<ITokens> {
         try {
             // Verify refresh token
@@ -70,8 +71,8 @@ export class AuthService {
                 id: user._id.toString(),
                 email: user.email,
                 name: user.name,
-                tenantId: user.tenantId
-
+                tenantId: user.tenantId,
+                roles: user.roles
             });
 
             return tokens;

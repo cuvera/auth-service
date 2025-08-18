@@ -29,6 +29,7 @@ export interface IJwtPayload {
     email: string;
     name: string;
     tenantId: string;
+    roles: string[];
     iat?: number;
     exp?: number;
 }

@@ -1,0 +1,170 @@
+name: Build and Deploy Intelligence Service
+
+# Required GitHub Secrets:
+# - SSH_PRIVATE_KEY: Private SSH key for accessing the deployment VM
+# - AZURE_DEVOPS_USER: Username for Azure DevOps artifacts access
+# - AZURE_DEVOPS_TOKEN: Personal access token for Azure DevOps artifacts
+# - AZURE_DEVOPS_EMAIL: Email associated with Azure DevOps account
+
+# Required environment variables for deployment:
+# - LLM_MODEL: LLM model to use for the service
+# - LLM_PROVIDER: LLM provider to use for the service
+# - LLM_API_KEY: API key for the LLM provider
+# - NODE_ENV: Node environment (development or production)
+# - SERVICE_NAME: Name of the service
+# - VM_HOST: Hostname or IP address of the deployment VM
+# - VM_PORT: Port for deployment and health check, defaults to 7004
+# - VM_USER: Username for SSH access to the VM
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+
+env:
+  NODE_VERSION: '22.18.0'
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: dev
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
+        
+    - name: Setup Azure Artifacts Authentication
+      run: |
+        echo "@cuvera:registry=https://pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/" > ~/.npmrc
+        echo "always-auth=true" >> ~/.npmrc
+        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:username=${{ vars.AZURE_DEVOPS_USER }}" >> ~/.npmrc
+        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:_password=${{ secrets.AZURE_DEVOPS_TOKEN }}" >> ~/.npmrc
+        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:email=info@cuvera.ai" >> ~/.npmrc
+        echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
+
+        cp ~/.npmrc .
+        
+    - name: Clean and Install dependencies
+      run: |
+        # Remove package-lock.json with hardcoded Azure URLs
+        # rm -f package-lock.json
+        
+        # Install all dependencies - this will respect the .npmrc configuration
+        npm install --audit=false
+
+      
+    # - name: Run linting
+    #   run: npm run lint
+      
+    - name: Build TypeScript
+      run: npm run build
+      
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-files
+        path: |
+          dist/
+          package.json
+          package-lock.json
+        retention-days: 7
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: dev
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+    
+    steps:    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist-files
+
+    - name: Setup SSH key
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        
+    - name: Add VM to known hosts
+      run: |
+        echo "${{ vars.VM_HOST }} ${{ vars.VM_USER }}"
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ vars.VM_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Deploy to SSH Server
+      run: |
+        echo "Starting deployment to VM..."
+        
+        # Create deployment directory structure
+        echo "Creating deployment directory..."
+        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 ${{ vars.VM_USER }}@${{ vars.VM_HOST }} "mkdir -p /home/cuvera/${{ vars. SERVICE_NAME }}"
+        
+        # Create backup of current deployment
+        echo "Creating backup of current deployment..."
+        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 ${{ vars.VM_USER }}@${{ vars.VM_HOST }} << 'ENDSSH'
+        if [ -d "/home/cuvera/${{ vars. SERVICE_NAME }}/dist" ]; then
+          mv /home/cuvera/${{ vars. SERVICE_NAME }} /home/cuvera/backup/${{ vars. SERVICE_NAME }}-backup-$(date +%Y%m%d_%H%M%S) || echo "Backup failed, continuing..."
+          mkdir -p /home/cuvera/${{ vars. SERVICE_NAME }}
+        fi
+        ENDSSH
+        
+        # Upload build artifacts
+        echo "Uploading build artifacts..."
+        scp -o StrictHostKeyChecking=no -o ConnectTimeout=30 -r dist/ package*.json ${{ vars.VM_USER }}@${{ vars.VM_HOST }}:/home/cuvera/${{ vars. SERVICE_NAME }}/
+        
+        # Setup Azure artifacts authentication on remote server
+        echo "Setting up Azure artifacts authentication on remote server..."
+        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 ${{ vars.VM_USER }}@${{ vars.VM_HOST }} << ENDSSH
+        cd /home/cuvera/${{ vars. SERVICE_NAME }}
+
+        # Create .npmrc with proper Azure DevOps authentication
+        echo "@cuvera:registry=https://pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/" > ~/.npmrc
+        echo "always-auth=true" >> ~/.npmrc
+        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:username=${{ vars.AZURE_DEVOPS_USER }}" >> ~/.npmrc
+        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:_password=${{ secrets.AZURE_DEVOPS_TOKEN }}" >> ~/.npmrc
+        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:email=info@cuvera.ai" >> ~/.npmrc
+        echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
+
+        cp ~/.npmrc .
+
+        # Clean install production dependencies
+        echo "Installing production dependencies..."
+        npm install --only=production --audit=false
+        
+        # Check if PM2 is installed
+        if ! command -v pm2 &> /dev/null; then
+          echo "PM2 not found, installing globally..."
+          npm install -g pm2
+        fi
+        
+        # Stop existing service gracefully
+        pm2 stop ${{ vars. SERVICE_NAME }} 2>/dev/null || echo "Service not running or already stopped"
+        pm2 delete ${{ vars. SERVICE_NAME }} 2>/dev/null || echo "Service not found in PM2"
+        
+        # Start the service
+        echo "Starting intelligence service..."
+        pm2 start dist/app.js --name ${{ vars. SERVICE_NAME }} --log /home/cuvera/logs/${{ vars. SERVICE_NAME }}.log --error /home/cuvera/logs/${{ vars. SERVICE_NAME }}-error.log
+        
+        # Save PM2 configuration
+        pm2 save
+        pm2 startup
+        
+        echo "Deployment completed successfully!"
+        ENDSSH
+
+    - name: Health check
+      run: |
+        sleep 10
+        curl -f http://${{ vars.VM_HOST }}/${{ vars. SERVICE_NAME }}/health || exit 1

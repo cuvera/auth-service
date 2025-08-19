@@ -139,6 +139,34 @@ jobs:
 
         cp ~/.npmrc .
 
+        # Create .env file with environment variables
+        echo "Creating .env file..."
+        echo "PORT=${{ vars.VM_PORT }}" > .env
+        echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env
+        echo "NODE_ENV=${{ vars.NODE_ENV }}" >> .env
+        echo "SERVICE_NAME=${{ vars.SERVICE_NAME }}" >> .env
+        echo "BASE_URL=${{ vars.BASE_URL }}" >> .env
+        echo "LLM_PROVIDER=${{ vars.LLM_PROVIDER }}" >> .env
+        echo "LLM_API_KEY=${{ secrets.LLM_API_KEY }}" >> .env
+        echo "LLM_MODEL=${{ vars.LLM_MODEL }}" >> .env
+        echo "LLM_BASE_URL=${{ vars.LLM_BASE_URL }}" >> .env
+        echo "LLM_API_VERSION=${{ vars.LLM_API_VERSION }}" >> .env
+
+        echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+        echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
+        echo "JWT_EXPIRES_IN=${{ vars.JWT_EXPIRES_IN }}" >> .env
+        echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> .env
+        echo "JWT_REFRESH_EXPIRES_IN=${{ vars.JWT_REFRESH_EXPIRES_IN }}" >> .env
+        echo "JWT_COOKIE_EXPIRES_IN=${{ vars.JWT_COOKIE_EXPIRES_IN }}" >> .env
+
+        echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+        echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
+        echo "GOOGLE_CALLBACK_URL=${{ vars.GOOGLE_CALLBACK_URL }}" >> .env
+
+        echo "SAML_ENTRY_POINT=${{ vars.SAML_ENTRY_POINT }}" >> .env
+        echo "SAML_ISSUER=${{ vars.SAML_ISSUER }}" >> .env
+        echo "SAML_CALLBACK_URL=${{ vars.SAML_CALLBACK_URL }}" >> .env
+
         # Clean install production dependencies
         echo "Installing production dependencies..."
         npm install --only=production --audit=false

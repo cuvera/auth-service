@@ -192,7 +192,7 @@ jobs:
         echo "Deployment completed successfully!"
         ENDSSH
 
-    # - name: Health check
-    #   run: |
-    #     sleep 10
-    #     curl -f http://${{ vars.VM_HOST }}/${{ vars. SERVICE_NAME }}/health || exit 1
+    - name: Health check
+      run: |
+        sleep 10
+        curl -f https://${{ vars.VM_HOST }}/${{ vars. SERVICE_NAME }}/health || exit 1

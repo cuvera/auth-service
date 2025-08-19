@@ -186,8 +186,8 @@ export class PassportAuthService {
             id: user._id.toString(),
             email: user.email,
             name: user.name,
-            tenantId: user.tenantId
-
+            tenantId: user.tenantId,
+            roles: user.roles
         });
         return { user, tokens };
     }

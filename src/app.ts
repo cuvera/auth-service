@@ -87,9 +87,22 @@ app.get('/health', (req, res) => {
     });
 });
 
-// API routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', userRoutes);
+// context/base routes
+const baseRouter = express.Router();
+
+// Health check route
+baseRouter.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'success',
+        message: 'Server is running!',
+        timestamp: new Date().toISOString(),
+    });
+});
+
+baseRouter.use('/api/v1/auth', authRoutes);
+baseRouter.use('/api/v1/users', userRoutes);
+
+app.use('/auth-service', baseRouter);
 
 // Handle undefined routes
 app.all('*', (req, res, next) => {

@@ -132,7 +132,7 @@ if (process.env.SAML_ENTRY_POINT && process.env.SAML_ISSUER) {
             issuer: process.env.SAML_ISSUER,
             cert: idpCert,
             signatureAlgorithm: 'sha256',
-            callbackUrl: process.env.SAML_CALLBACK_URL || `${process.env.API_BASE_URL}/api/v1/auth/saml/callback`,
+            callbackUrl: process.env.SAML_CALLBACK_URL || `${process.env.BASE_URL}/api/v1/auth/saml/callback`,
             validateInResponseTo: false,
             requestIdExpirationPeriodMs: 28800000, // 8 hours
             acceptedClockSkewMs: 300000, // 5 minutes

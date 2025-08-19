@@ -56,12 +56,13 @@ export const verifyRefreshToken = (token: string): IJwtPayload => {
     }
 };
 
-export const createTokens = (user: { id: string; email: string, name: string, tenantId: string }): { accessToken: string; refreshToken: string } => {
+export const createTokens = (user: { id: string; email: string, name: string, tenantId: string, roles: string[] }): { accessToken: string; refreshToken: string } => {
     const payload: IJwtPayload = {
         id: user.id,
         email: user.email,
         name: user.name,
-        tenantId: user.tenantId
+        tenantId: user.tenantId,
+        roles: user.roles
 
     };
 

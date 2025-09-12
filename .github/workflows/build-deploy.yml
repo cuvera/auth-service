@@ -145,6 +145,7 @@ jobs:
         echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env
         echo "NODE_ENV=${{ vars.NODE_ENV }}" >> .env
         echo "SERVICE_NAME=${{ vars.SERVICE_NAME }}" >> .env
+        echo "FRONTEND_URL=${{ vars.FRONTEND_URL }}" >> .env
         echo "BASE_URL=${{ vars.BASE_URL }}" >> .env
         echo "LLM_PROVIDER=${{ vars.LLM_PROVIDER }}" >> .env
         echo "LLM_API_KEY=${{ secrets.LLM_API_KEY }}" >> .env

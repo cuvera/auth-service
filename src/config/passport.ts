@@ -68,15 +68,28 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             },
             async (accessToken, refreshToken, profile, done) => {
                 try {
+                    const email = profile.emails?.[0]?.value;
+                    if (!email) {
+                        return done(new Error('No email found in Google profile'));
+                    }
+
+                    // Check if the email domain matches the allowed domain
+                    const allowedDomain = process.env.GOOGLE_DOMAIN_NAME;
+                    if (allowedDomain) {
+                        const emailDomain = email.split('@')[1];
+                        if (emailDomain !== allowedDomain) {
+                            return done(null, false, { message: `Only ${allowedDomain} email addresses are allowed.` });
+                        }
+                    }
+
                     // Check if user already exists with this Google ID
                     let user = await User.findOne({ googleId: profile.id });
-
                     if (user) {
                         return done(null, user);
                     }
 
                     // Check if user exists with the same email
-                    user = await User.findOne({ email: profile.emails?.[0]?.value });
+                    user = await User.findOne({ email });
 
                     if (user) {
                         // Link Google account to existing user
@@ -89,7 +102,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                     user = new User({
                         googleId: profile.id,
                         name: profile.displayName,
-                        email: profile.emails?.[0]?.value,
+                        email: email,
                         avatar: profile.photos?.[0]?.value,
                         provider: 'google',
                         // Generate a random password for OAuth users

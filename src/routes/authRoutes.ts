@@ -9,7 +9,8 @@ import {
     googleCallback,
     samlAuth,
     samlCallback,
-    getAuthProviders
+    getAuthProviders,
+    authorize
 } from '../controllers/authController';
 import { protect } from '../middlewares/auth';
 
@@ -302,5 +303,24 @@ router.get('/saml', samlAuth);
  *         description: Redirect to frontend with authentication result
  */
 router.post('/saml/callback', samlCallback);
+
+/**
+ * @swagger
+ * /auth/authorize:
+ *   post:
+ *     summary: Authorize user
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: User authorized successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 userId:
+ *                   type: string
+ */
+router.post('/authorize', authorize);
 
 export default router;

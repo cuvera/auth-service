@@ -4,6 +4,7 @@ import { AppError } from '../utils/appError';
 import authService from '../services/authService';
 import passportAuthService from '../services/passportAuthService';
 import { IRegisterRequest, ILoginRequest, IRefreshTokenRequest, IApiResponse, IAuthResponse } from '../interfaces';
+import jwt from 'jsonwebtoken';
 
 const createSendToken = (user: any, tokens: any, statusCode: number, res: Response) => {
     const cookieOptions = {
@@ -222,4 +223,21 @@ export const getAuthProviders = catchAsync(async (req: Request, res: Response) =
     };
 
     res.status(200).json(response);
+});
+
+// Take bearer token from header and return userId
+export const authorize = catchAsync(async (req: Request, res: Response) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        throw new AppError('No token provided', 401);
+    }
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+
+    res.status(200)
+    .setHeader('user-id', decoded.id)
+    .setHeader('email', decoded.email)
+    .setHeader('username', decoded.name)
+    .setHeader('tenant-id', decoded.tenantId)
+    .setHeader('roles', decoded.roles)
+    .json({});
 });

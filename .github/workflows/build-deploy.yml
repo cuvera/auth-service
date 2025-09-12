@@ -52,7 +52,6 @@ jobs:
         echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:_password=${{ secrets.AZURE_DEVOPS_TOKEN }}" >> ~/.npmrc
         echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:email=info@cuvera.ai" >> ~/.npmrc
         echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
-
         cp ~/.npmrc .
         
     - name: Clean and Install dependencies

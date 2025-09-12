@@ -49,8 +49,7 @@ export class AuthService {
             email: user.email,
             name: user.name,
             tenantId: user.tenantId,
-            roles: user.roles
- 
+            roles: user.roles 
         });
 
         return { user, tokens };

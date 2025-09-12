@@ -321,6 +321,6 @@ router.post('/saml/callback', samlCallback);
  *                 userId:
  *                   type: string
  */
-router.post('/authorize', authorize);
+router.get('/authorize', authorize);
 
 export default router;

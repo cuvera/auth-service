@@ -227,17 +227,52 @@ export const getAuthProviders = catchAsync(async (req: Request, res: Response) =
 
 // Take bearer token from header and return userId
 export const authorize = catchAsync(async (req: Request, res: Response) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-        throw new AppError('No token provided', 401);
-    }
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    try {
+        console.log('Auth request received:', {
+            method: req.method,
+            headers: req.headers,
+            originalUri: req.headers['x-original-uri']
+        });
 
-    res.status(200)
-    .setHeader('user-id', decoded.id)
-    .setHeader('email', decoded.email)
-    .setHeader('username', decoded.name)
-    .setHeader('tenant-id', decoded.tenantId)
-    .setHeader('roles', decoded.roles)
-    .json({});
+        // Extract JWT token from Authorization header
+        const authHeader = req.headers.authorization;
+        
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            console.log('Missing or invalid Authorization header');
+            return res.status(401).json({ error: 'Missing or invalid token' });
+        }
+
+        const token = authHeader.split(' ')[1];
+
+        // Verify JWT token
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+        
+        console.log('Token decoded successfully:', decoded);
+
+        // Set user info in response headers for Nginx
+        res.set({
+            'user-id': decoded.id,
+            'tenant-id': decoded.tenantId,
+            'roles': Array.isArray(decoded.roles) ? decoded.roles.join(',') : decoded.roles,
+            'email': decoded.email,
+            'username': decoded.username
+        });
+
+        // Return 200 OK with empty body
+        res.status(200).send('');
+
+    } catch (error: any) {
+        console.error('Auth error:', error.message);
+        
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Token expired' });
+        }
+        
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+        
+        // Internal server error
+        res.status(500).json({ error: 'Authentication service error' });
+    }
 });

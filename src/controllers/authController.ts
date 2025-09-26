@@ -127,12 +127,13 @@ export const googleAuth = catchAsync(async (req: Request, res: Response, next: F
 
 export const googleCallback = catchAsync(async (req: Request, res: Response, next: Function) => {
     passportAuthService.authenticateGoogleCallback()(req, res, (err: any) => {
+        const origin = req.headers.origin || process.env.FRONTEND_URL;
         if (err) {
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
+            return res.redirect(`${origin}/login?error=google_auth_failed`);
         }
 
         if (!req.user) {
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
+            return res.redirect(`${origin}/login?error=google_auth_failed`);
         }
 
         const { user, tokens } = passportAuthService.handleAuthSuccess(req.user);
@@ -149,8 +150,7 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
         res.cookie('refreshToken', tokens.refreshToken, cookieOptions);
 
         // Redirect to frontend login page with access token
-        const frontendUrl = process.env.FRONTEND_URL;
-        res.redirect(`${frontendUrl}/login?token=${tokens.accessToken}`);
+        res.redirect(`${origin}/login?token=${tokens.accessToken}`);
     });
 });
 
@@ -187,11 +187,11 @@ export const samlCallback = catchAsync(async (req: Request, res: Response, next:
     passportAuthService.authenticateSamlCallback()(req, res, (err: any) => {
         if (err) {
             console.error('SAML callback error:', err);
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=saml_auth_failed`);
+            return res.redirect(`${origin}/login?error=saml_auth_failed`);
         }
 
         if (!req.user) {
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=saml_auth_failed`);
+            return res.redirect(`${origin}/login?error=saml_auth_failed`);
         }
 
         const { user, tokens } = passportAuthService.handleAuthSuccess(req.user);
@@ -208,8 +208,7 @@ export const samlCallback = catchAsync(async (req: Request, res: Response, next:
         res.cookie('refreshToken', tokens.refreshToken, cookieOptions);
 
         // Redirect to frontend with access token
-        const frontendUrl = process.env.FRONTEND_URL;
-        res.redirect(`${frontendUrl}/auth/success?token=${tokens.accessToken}`);
+        res.redirect(`${origin}/auth/success?token=${tokens.accessToken}`);
     });
 });
 

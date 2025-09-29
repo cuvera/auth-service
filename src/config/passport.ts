@@ -112,7 +112,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                     let employeeId = null;
                     try {
                         const response = await axios.get(
-                            `${process.env.INGESTION_SERVICE_URL || 'http://localhost:3001'}/ingestion-service/api/v1/employees/email/${encodeURIComponent(email)}`,
+                            `${process.env.BASE_URL || 'http://localhost:3001'}/ingestion-service/api/v1/employees/email/${encodeURIComponent(email)}`,
                             {
                                 headers: {
                                     'Accept': 'application/json'

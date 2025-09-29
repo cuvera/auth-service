@@ -52,6 +52,9 @@ const userSchema = new Schema<IUser>(
       type: [String],
       default: ['user'],
     },
+    employeeId: {
+      type: String,
+    },
   },
   {
     timestamps: true,

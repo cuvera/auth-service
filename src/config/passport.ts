@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as SamlStrategy } from 'passport-saml';
+import axios from 'axios';
 import User from '../models/User';
 import { IJwtPayload } from '../interfaces';
 import fs from 'fs';
@@ -73,13 +74,23 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                         return done(new Error('No email found in Google profile'));
                     }
 
-                    // Check if the email domain matches the allowed domain
                     const allowedDomain = process.env.GOOGLE_DOMAIN_NAME;
-                    if (allowedDomain) {
+                    try {
+                        const allowedEmails = require('./allowed-emails.json').allowedEmails;
                         const emailDomain = email.split('@')[1];
-                        if (emailDomain !== allowedDomain) {
-                            return done(null, false, { message: `Only ${allowedDomain} email addresses are allowed.` });
+                        
+                        const isDomainAllowed = allowedDomain && emailDomain === allowedDomain;
+                        const isEmailAllowed = allowedEmails.includes(email);
+                        
+                        if (!isDomainAllowed && !isEmailAllowed) {
+                            const errorMessage = allowedDomain 
+                                ? `Access denied. Only ${allowedDomain} email addresses or emails from the allowed list are permitted.`
+                                : 'Access denied. Your email is not in the allowed list.';
+                            return done(null, false, { message: errorMessage });
                         }
+                    } catch (error) {
+                        console.error('Error during email validation:', error);
+                        return done(new Error('Authentication service configuration error'));
                     }
 
                     // Check if user already exists with this Google ID
@@ -97,6 +108,21 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                         await user.save();
                         return done(null, user);
                     }
+                    
+                    let employeeId = null;
+                    try {
+                        const response = await axios.get(
+                            `${process.env.INGESTION_SERVICE_URL || 'http://localhost:3001'}/ingestion-service/api/v1/employees/email/${encodeURIComponent(email)}`,
+                            {
+                                headers: {
+                                    'Accept': 'application/json'
+                                }
+                            }
+                        );
+                        employeeId = response.data?.employeeId || null;
+                    } catch (error: any) {
+                        console.warn('Failed to fetch employee ID:', error.message);
+                    }
 
                     // Create new user
                     user = new User({
@@ -105,6 +131,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                         email: email,
                         avatar: profile.photos?.[0]?.value,
                         provider: 'google',
+                        employeeId: employeeId,
                         // Generate a random password for OAuth users
                         password: Math.random().toString(36).slice(-8),
                     });

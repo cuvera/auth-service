@@ -8,6 +8,28 @@ import { IJwtPayload } from '../interfaces';
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * Fetches employee ID from the ingestion service
+ * @param {string} email - Employee email address
+ * @returns {Promise<string | null>} Employee ID or null if not found
+ */
+async function fetchEmployeeId(email: string): Promise<string | null> {
+    try {
+        const response = await axios.get(
+            `${process.env.BASE_URL || 'http://localhost:3001'}/ingestion-service/api/v1/employees/email/${encodeURIComponent(email)}`,
+            {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }
+        );
+        return response.data?.employeeId || null;
+    } catch (error: any) {
+        console.warn('Failed to fetch employee ID:', error.message);
+        return null;
+    }
+}
+
 // Serialize user for session
 passport.serializeUser((user: any, done) => {
     done(null, user._id);
@@ -109,20 +131,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                         return done(null, user);
                     }
                     
-                    let employeeId = null;
-                    try {
-                        const response = await axios.get(
-                            `${process.env.BASE_URL || 'http://localhost:3001'}/ingestion-service/api/v1/employees/email/${encodeURIComponent(email)}`,
-                            {
-                                headers: {
-                                    'Accept': 'application/json'
-                                }
-                            }
-                        );
-                        employeeId = response.data?.employeeId || null;
-                    } catch (error: any) {
-                        console.warn('Failed to fetch employee ID:', error.message);
-                    }
+                    // Fetch employee ID from the ingestion service
+                    const employeeId = await fetchEmployeeId(email);
 
                     // Create new user
                     user = new User({

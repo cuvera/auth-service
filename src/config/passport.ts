@@ -97,26 +97,26 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                     }
 
                     const allowedDomain = process.env.GOOGLE_DOMAIN_NAME;
-                    try {
-                        const allowedEmails = process.env.ALLOWED_EMAILS ? 
-                            process.env.ALLOWED_EMAILS.split(',').map(email => email.trim()) : [];
-                        const emailDomain = email.split('@')[1];
-                        console.log("allowedEmails", allowedEmails);
-                        console.log("emailDomain", emailDomain);
-                        const isDomainAllowed = allowedDomain && emailDomain === allowedDomain;
-                        const isEmailAllowed = allowedEmails.includes(email);
-                        console.log("isDomainAllowed", isDomainAllowed);
-                        console.log("isEmailAllowed", isEmailAllowed);
-                        if (!isDomainAllowed && !isEmailAllowed) {
-                            const errorMessage = allowedDomain 
-                                ? `Access denied. Only ${allowedDomain} email addresses or emails from the allowed list are permitted.`
-                                : 'Access denied. Your email is not in the allowed list.';
-                            return done(null, false, { message: errorMessage });
-                        }
-                    } catch (error) {
-                        console.error('Error during email validation:', error);
-                        return done(new Error('Authentication service configuration error'));
-                    }
+                    // try {
+                    //     const allowedEmails = process.env.ALLOWED_EMAILS ? 
+                    //         process.env.ALLOWED_EMAILS.split(',').map(email => email.trim()) : [];
+                    //     const emailDomain = email.split('@')[1];
+                    //     console.log("allowedEmails", allowedEmails);
+                    //     console.log("emailDomain", emailDomain);
+                    //     const isDomainAllowed = allowedDomain && emailDomain === allowedDomain;
+                    //     const isEmailAllowed = allowedEmails.includes(email);
+                    //     console.log("isDomainAllowed", isDomainAllowed);
+                    //     console.log("isEmailAllowed", isEmailAllowed);
+                    //     if (!isDomainAllowed && !isEmailAllowed) {
+                    //         const errorMessage = allowedDomain 
+                    //             ? `Access denied. Only ${allowedDomain} email addresses or emails from the allowed list are permitted.`
+                    //             : 'Access denied. Your email is not in the allowed list.';
+                    //         return done(null, false, { message: errorMessage });
+                    //     }
+                    // } catch (error) {
+                    //     console.error('Error during email validation:', error);
+                    //     return done(new Error('Authentication service configuration error'));
+                    // }
 
                     // Check if user already exists with this Google ID
                     let user = await User.findOne({ googleId: profile.id });
@@ -147,6 +147,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                         employeeId: employeeId,
                         // Generate a random password for OAuth users
                         password: Math.random().toString(36).slice(-8),
+                        tenantId: process.env?.TENANT_ID || 'default'
                     });
 
                     await user.save();

@@ -98,7 +98,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
                     const allowedDomain = process.env.GOOGLE_DOMAIN_NAME;
                     try {
-                        const allowedEmails = require('./allowed-emails.json').allowedEmails;
+                        const allowedEmails = require(path.resolve(__dirname, 'allowed-emails.json')).allowedEmails;
                         const emailDomain = email.split('@')[1];
                         console.log("allowedEmails", allowedEmails);
                         console.log("emailDomain", emailDomain);

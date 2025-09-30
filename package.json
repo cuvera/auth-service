@@ -21,7 +21,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@cuvera/commons": "1.1.0",
     "@types/express-session": "^1.18.2",
+    "axios": "^1.12.2",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -37,8 +39,7 @@
     "passport-saml": "^3.2.4",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
-    "validator": "^13.11.0",
-    "@cuvera/commons": "1.1.0"
+    "validator": "^13.11.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

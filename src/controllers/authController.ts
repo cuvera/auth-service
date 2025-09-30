@@ -4,6 +4,7 @@ import { AppError } from '../utils/appError';
 import authService from '../services/authService';
 import passportAuthService from '../services/passportAuthService';
 import { IRegisterRequest, ILoginRequest, IRefreshTokenRequest, IApiResponse, IAuthResponse } from '../interfaces';
+import jwt from 'jsonwebtoken';
 
 const createSendToken = (user: any, tokens: any, statusCode: number, res: Response) => {
     const cookieOptions = {
@@ -126,12 +127,13 @@ export const googleAuth = catchAsync(async (req: Request, res: Response, next: F
 
 export const googleCallback = catchAsync(async (req: Request, res: Response, next: Function) => {
     passportAuthService.authenticateGoogleCallback()(req, res, (err: any) => {
+        const origin = req.headers.origin || process.env.FRONTEND_URL;
         if (err) {
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
+            return res.redirect(`${origin}/login?error=google_auth_failed`);
         }
 
         if (!req.user) {
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
+            return res.redirect(`${origin}/login?error=google_auth_failed`);
         }
 
         const { user, tokens } = passportAuthService.handleAuthSuccess(req.user);
@@ -148,8 +150,7 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
         res.cookie('refreshToken', tokens.refreshToken, cookieOptions);
 
         // Redirect to frontend login page with access token
-        const frontendUrl = process.env.FRONTEND_URL;
-        res.redirect(`${frontendUrl}/login?token=${tokens.accessToken}`);
+        res.redirect(`${origin}/login?token=${tokens.accessToken}`);
     });
 });
 
@@ -186,11 +187,11 @@ export const samlCallback = catchAsync(async (req: Request, res: Response, next:
     passportAuthService.authenticateSamlCallback()(req, res, (err: any) => {
         if (err) {
             console.error('SAML callback error:', err);
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=saml_auth_failed`);
+            return res.redirect(`${origin}/login?error=saml_auth_failed`);
         }
 
         if (!req.user) {
-            return res.redirect(`${process.env.FRONTEND_URL}/login?error=saml_auth_failed`);
+            return res.redirect(`${origin}/login?error=saml_auth_failed`);
         }
 
         const { user, tokens } = passportAuthService.handleAuthSuccess(req.user);
@@ -207,8 +208,7 @@ export const samlCallback = catchAsync(async (req: Request, res: Response, next:
         res.cookie('refreshToken', tokens.refreshToken, cookieOptions);
 
         // Redirect to frontend with access token
-        const frontendUrl = process.env.FRONTEND_URL;
-        res.redirect(`${frontendUrl}/auth/success?token=${tokens.accessToken}`);
+        res.redirect(`${origin}/auth/success?token=${tokens.accessToken}`);
     });
 });
 
@@ -222,4 +222,56 @@ export const getAuthProviders = catchAsync(async (req: Request, res: Response) =
     };
 
     res.status(200).json(response);
+});
+
+// Take bearer token from header and return userId
+export const authorize = catchAsync(async (req: Request, res: Response) => {
+    try {
+        console.log('Auth request received:', {
+            method: req.method,
+            headers: req.headers,
+            originalUri: req.headers['x-original-uri']
+        });
+
+        // Extract JWT token from Authorization header
+        const authHeader = req.headers.authorization;
+        
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            console.log('Missing or invalid Authorization header');
+            return res.status(401).json({ error: 'Missing or invalid token' });
+        }
+
+        const token = authHeader.split(' ')[1];
+
+        // Verify JWT token
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+        
+        console.log('Token decoded successfully:', decoded);
+
+        // Set user info in response headers for Nginx
+        res.set({
+            'user-id': decoded.id,
+            'tenant-id': decoded.tenantId,
+            'roles': Array.isArray(decoded.roles) ? decoded.roles.join(',') : decoded.roles,
+            'email': decoded.email,
+            'username': decoded.username
+        });
+
+        // Return 200 OK with empty body
+        res.status(200).send('');
+
+    } catch (error: any) {
+        console.error('Auth error:', error.message);
+        
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Token expired' });
+        }
+        
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+        
+        // Internal server error
+        res.status(500).json({ error: 'Authentication service error' });
+    }
 });

@@ -2,10 +2,33 @@ import passport from 'passport';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as SamlStrategy } from 'passport-saml';
+import axios from 'axios';
 import User from '../models/User';
 import { IJwtPayload } from '../interfaces';
 import fs from 'fs';
 import path from 'path';
+
+/**
+ * Fetches employee ID from the ingestion service
+ * @param {string} email - Employee email address
+ * @returns {Promise<string | null>} Employee ID or null if not found
+ */
+async function fetchEmployeeId(email: string): Promise<string | null> {
+    try {
+        const response = await axios.get(
+            `${process.env.BASE_URL || 'http://localhost:3001'}/ingestion-service/api/v1/employees/email/${encodeURIComponent(email)}`,
+            {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }
+        );
+        return response.data?.employeeId || null;
+    } catch (error: any) {
+        console.warn('Failed to fetch employee ID:', error.message);
+        return null;
+    }
+}
 
 // Serialize user for session
 passport.serializeUser((user: any, done) => {
@@ -68,15 +91,42 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             },
             async (accessToken, refreshToken, profile, done) => {
                 try {
+                    const email = profile.emails?.[0]?.value;
+                    if (!email) {
+                        return done(new Error('No email found in Google profile'));
+                    }
+
+                    const allowedDomain = process.env.GOOGLE_DOMAIN_NAME;
+                    try {
+                        const allowedEmails = process.env.ALLOWED_EMAILS ? 
+                            process.env.ALLOWED_EMAILS.split(',').map(email => email.trim()) : [];
+                        const emailDomain = email.split('@')[1];
+                        console.log("allowedDomain", allowedDomain);
+                        console.log("allowedEmails", allowedEmails);
+                        console.log("emailDomain", emailDomain);
+                        const isDomainAllowed = allowedDomain && emailDomain === allowedDomain;
+                        const isEmailAllowed = allowedEmails.includes(email);
+                        console.log("isDomainAllowed", isDomainAllowed);
+                        console.log("isEmailAllowed", isEmailAllowed);
+                        if (!isDomainAllowed && !isEmailAllowed) {
+                            const errorMessage = allowedDomain 
+                                ? `Access denied. Only ${allowedDomain} email addresses or emails from the allowed list are permitted.`
+                                : 'Access denied. Your email is not in the allowed list.';
+                            return done(null, false, { message: errorMessage });
+                        }
+                    } catch (error) {
+                        console.error('Error during email validation:', error);
+                        return done(new Error('Authentication service configuration error'));
+                    }
+
                     // Check if user already exists with this Google ID
                     let user = await User.findOne({ googleId: profile.id });
-
                     if (user) {
                         return done(null, user);
                     }
 
                     // Check if user exists with the same email
-                    user = await User.findOne({ email: profile.emails?.[0]?.value });
+                    user = await User.findOne({ email });
 
                     if (user) {
                         // Link Google account to existing user
@@ -84,16 +134,21 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                         await user.save();
                         return done(null, user);
                     }
+                    
+                    // Fetch employee ID from the ingestion service
+                    const employeeId = await fetchEmployeeId(email);
 
                     // Create new user
                     user = new User({
                         googleId: profile.id,
                         name: profile.displayName,
-                        email: profile.emails?.[0]?.value,
+                        email: email,
                         avatar: profile.photos?.[0]?.value,
                         provider: 'google',
+                        employeeId: employeeId,
                         // Generate a random password for OAuth users
                         password: Math.random().toString(36).slice(-8),
+                        tenantId: process.env?.TENANT_ID || 'default'
                     });
 
                     await user.save();

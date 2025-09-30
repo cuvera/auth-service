@@ -101,6 +101,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                         const allowedEmails = process.env.ALLOWED_EMAILS ? 
                             process.env.ALLOWED_EMAILS.split(',').map(email => email.trim()) : [];
                         const emailDomain = email.split('@')[1];
+                        console.log("allowedDomain", allowedDomain);
                         console.log("allowedEmails", allowedEmails);
                         console.log("emailDomain", emailDomain);
                         const isDomainAllowed = allowedDomain && emailDomain === allowedDomain;

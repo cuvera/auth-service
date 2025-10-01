@@ -120,9 +120,10 @@ export const getMe = catchAsync(async (req: Request, res: Response) => {
     res.status(200).json(response);
 });
 
+
 // Google OAuth Routes
 export const googleAuth = catchAsync(async (req: Request, res: Response, next: Function) => {
-    return passportAuthService.authenticateGoogle()(req, res, next);
+    return passportAuthService.authenticateGoogle(req)(req, res, next);
 });
 
 export const googleCallback = catchAsync(async (req: Request, res: Response, next: Function) => {

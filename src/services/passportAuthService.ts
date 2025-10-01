@@ -4,13 +4,26 @@ import { createTokens } from '../utils/jwt';
 import { AppError } from '../utils/appError';
 import { IUser, ITokens } from '../interfaces';
 
+
 export class PassportAuthService {
-    // Google OAuth authentication wrapper
-    authenticateGoogle() {
-        return passport.authenticate('google', {
-            scope: ['profile', 'email'],
-        });
+
+    isIOS(req: Request): boolean {
+        const ua = req.headers["user-agent"] || "";
+        return /iPhone|iPad|iPod/i.test(ua);
     }
+    // Google OAuth authentication wrapper
+    authenticateGoogle(req: Request) {
+        const options: any = {
+            scope: ['profile', 'email'],
+        };
+
+        if (this.isIOS(req)) {
+            options.prompt = "select_account";
+        }
+
+        return passport.authenticate('google', options);
+    }
+
 
     // Google OAuth callback wrapper
     authenticateGoogleCallback() {

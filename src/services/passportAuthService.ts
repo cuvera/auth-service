@@ -9,6 +9,7 @@ export class PassportAuthService {
     authenticateGoogle() {
         return passport.authenticate('google', {
             scope: ['profile', 'email'],
+            prompt: "select_account"
         });
     }
 

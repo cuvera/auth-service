@@ -7,8 +7,8 @@ export class UserService {
     return user.save();
   }
 
-  async getAllUsers(): Promise<IUser[]> {
-    return User.find().select('-password');
+  async getAllUsers(tenantId: string): Promise<IUser[]> {
+    return User.find({ tenantId }).select('-password');
   }
 
   async getUserById(id: string): Promise<IUser | null> {
@@ -31,6 +31,43 @@ export class UserService {
 
   async deleteUser(id: string): Promise<IUser | null> {
     return User.findByIdAndDelete(id);
+  }
+
+  async addUserRoles(id: string, newRoles: string[]): Promise<IUser | null> {
+    const user = await User.findById(id);
+    if (!user) {
+      return null;
+    }
+
+    const existingRoles = user.roles || [];
+    const uniqueNewRoles = newRoles.filter(role => !existingRoles.includes(role));
+    const updatedRoles = [...existingRoles, ...uniqueNewRoles];
+
+    return User.findByIdAndUpdate(
+      id,
+      { roles: updatedRoles },
+      { new: true, runValidators: true }
+    ).select('-password');
+  }
+
+  async removeUserRoles(id: string, rolesToRemove: string[]): Promise<IUser | null> {
+    const user = await User.findById(id);
+    if (!user) {
+      return null;
+    }
+
+    const existingRoles = user.roles || [];
+    const updatedRoles = existingRoles.filter(role => !rolesToRemove.includes(role));
+
+    if (updatedRoles.length === 0) {
+      throw new Error('User must have at least one role');
+    }
+
+    return User.findByIdAndUpdate(
+      id,
+      { roles: updatedRoles },
+      { new: true, runValidators: true }
+    ).select('-password');
   }
 }
 

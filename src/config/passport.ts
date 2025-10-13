@@ -24,7 +24,6 @@ async function fetchEmployeeDetails(email: string): Promise<string | null> {
                 }
             }
         );
-        console.log("response", response);
         return response.data || null;
     } catch (error: any) {
         console.warn('Failed to fetch employee ID:', error.message);
@@ -274,7 +273,7 @@ async function findOrCreateUser(
     }
 
     // Fetch employee details for new user
-    const employeeDetails: any = await fetchEmployeeDetails(email);
+    const employeeDetails: any = await fetchEmployeeDetails('media@bullmachine.com');
 
     // Create new user
     user = new User({

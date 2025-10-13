@@ -29,6 +29,7 @@ export interface IUserResponse {
     email: string;
     createdAt: Date;
     updatedAt?: Date;
+    employeeId?: string;
 }
 
 export interface IUpdateUserRequest {

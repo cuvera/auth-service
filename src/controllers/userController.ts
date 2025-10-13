@@ -19,6 +19,7 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
     email: user.email,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    employeeId: user.employeeId,
   };
 
   const response: IApiResponse<{ user: IUserResponse }> = {
@@ -40,6 +41,7 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     email: user.email,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    employeeId: user.employeeId,
   }));
 
   const response: IApiResponse<{ users: IUserResponse[] }> = {
@@ -67,6 +69,34 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
     email: user.email,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    employeeId: user.employeeId,
+  };
+
+  const response: IApiResponse<{ user: IUserResponse }> = {
+    status: 'success',
+    data: {
+      user: userResponse,
+    },
+  };
+
+  res.status(200).json(response);
+});
+
+export const getUserByEmployeeId = catchAsync(async (req: Request, res: Response) => {
+  const { employeeId } = req.params;
+  const user = await userService.getUserByEmployeeId(employeeId);
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  const userResponse: IUserResponse = {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    employeeId: user.employeeId,
   };
 
   const response: IApiResponse<{ user: IUserResponse }> = {

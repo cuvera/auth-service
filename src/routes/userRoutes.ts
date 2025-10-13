@@ -3,6 +3,7 @@ import {
     createUser,
     getAllUsers,
     getUserById,
+    getUserByEmployeeId,
 } from '../controllers/userController';
 import { protect } from '../middlewares/auth';
 
@@ -165,5 +166,40 @@ router.get('/', protect, getAllUsers);
  *         description: User not found
  */
 router.get('/:id', protect, getUserById);
+
+/**
+ * @swagger
+ * /users/employee/{employeeId}:
+ *   get:
+ *     summary: Get user by employee ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: employeeId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Employee ID
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+router.get('/employee/:employeeId', getUserByEmployeeId);
 
 export default router;

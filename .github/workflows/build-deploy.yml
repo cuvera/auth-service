@@ -1,197 +1,192 @@
-name: Build and Deploy Intelligence Service
-
-# Required GitHub Secrets:
-# - SSH_PRIVATE_KEY: Private SSH key for accessing the deployment VM
-# - AZURE_DEVOPS_USER: Username for Azure DevOps artifacts access
-# - AZURE_DEVOPS_TOKEN: Personal access token for Azure DevOps artifacts
-# - AZURE_DEVOPS_EMAIL: Email associated with Azure DevOps account
-
-# Required environment variables for deployment:
-# - LLM_MODEL: LLM model to use for the service
-# - LLM_PROVIDER: LLM provider to use for the service
-# - LLM_API_KEY: API key for the LLM provider
-# - NODE_ENV: Node environment (development or production)
-# - SERVICE_NAME: Name of the service
-# - VM_HOST: Hostname or IP address of the deployment VM
-# - VM_PORT: Port for deployment and health check, defaults to 7004
-# - VM_USER: Username for SSH access to the VM
+name: Dev Build and Deploy
 
 on:
   push:
-    branches:
-      - dev
+    branches: [dev]
   pull_request:
-    branches:
-      - main
+    branches: [dev]
 
 env:
   NODE_VERSION: '22.18.0'
-  
+
 jobs:
   build:
     runs-on: ubuntu-latest
     environment: dev
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        registry-url: 'https://registry.npmjs.org'
+      - name: Checkout code
+        uses: actions/checkout@v4
         
-    - name: Setup Azure Artifacts Authentication
-      run: |
-        echo "@cuvera:registry=https://pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/" > ~/.npmrc
-        echo "always-auth=true" >> ~/.npmrc
-        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:username=${{ vars.AZURE_DEVOPS_USER }}" >> ~/.npmrc
-        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:_password=${{ secrets.AZURE_DEVOPS_TOKEN }}" >> ~/.npmrc
-        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:email=info@cuvera.ai" >> ~/.npmrc
-        echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
-        cp ~/.npmrc .
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Create npmrc files
+        env:
+          SECRETS_CONTEXT: ${{ toJson(secrets) }}
+          VARS_CONTEXT: ${{ toJson(vars) }}
+        run: |          
+          # Create .npmrc for Azure DevOps authentication
+          if [ -n "${{ secrets.NPMRC_CONTENT }}" ]; then
+            echo "${{ secrets.NPMRC_CONTENT }}" | sed 's/\\n/\n/g' > .npmrc
+          else
+            cat > .npmrc << EOF
+          @cuvera:registry=https://pkgs.dev.azure.com/ashwinialike/_packaging/ashwinialike/npm/registry/
+          //pkgs.dev.azure.com/ashwinialike/_packaging/ashwinialike/npm/registry/:username=ashwinialike
+          //pkgs.dev.azure.com/ashwinialike/_packaging/ashwinialike/npm/registry/:_password=${{ secrets.AZURE_DEVOPS_TOKEN }}
+          //pkgs.dev.azure.com/ashwinialike/_packaging/ashwinialike/npm/registry/:email=info@cuvera.ai
+          //pkgs.dev.azure.com/ashwinialike/_packaging/ashwinialike/npm/registry/:always-auth=true
+          registry=https://registry.npmjs.org/
+          EOF
+          fi
+          
+      - name: Install dependencies
+        run: |
+          npm cache clean --force
+          npm install --audit=false
+          
+      - name: Build application
+        run: npm run build
         
-    - name: Clean and Install dependencies
-      run: |
-        # Remove package-lock.json with hardcoded Azure URLs
-        # rm -f package-lock.json
-        
-        # Install all dependencies - this will respect the .npmrc configuration
-        npm install --audit=false
-
-      
-    # - name: Run linting
-    #   run: npm run lint
-      
-    - name: Build TypeScript
-      run: npm run build
-      
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist-files
-        path: |
-          dist/
-          package.json
-          package-lock.json
-        retention-days: 7
+      - name: Prepare artifacts
+        run: |
+          echo "Files in current directory:"
+          ls -la
+          echo "Contents of .npmrc:"
+          cat .npmrc || echo ".npmrc not found"
+          
+          # Rename dotfiles to avoid upload issues
+          cp .npmrc npmrc-file
+          
+          echo "Files after renaming:"
+          ls -la npmrc-file
+          
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-build-${{ github.sha }}
+          path: |
+            dist/
+            package.json
+            package-lock.json
+            npmrc-file
+          retention-days: 3
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     environment: dev
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+    if: github.ref == 'refs/heads/dev'
     
-    steps:    
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: dist-files
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dev-build-${{ github.sha }}
+          
+      - name: Restore and verify files
+        run: |
+          echo "Files after download:"
+          ls -la
+          
+          # Rename files back to dotfiles
+          mv npmrc-file .npmrc
+          
+          echo "Files after restoring names:"
+          ls -la
+          echo "Checking .npmrc file:"
+          cat .npmrc
+          
+      - name: Parse deployment variables
+        id: deploy_vars
+        run: |
+          # Use individual variables instead of parsing DEV_ENV
+          echo "VM_HOST=${{ vars.VM_HOST }}" >> $GITHUB_OUTPUT
+          echo "VM_USER=${{ vars.VM_USER }}" >> $GITHUB_OUTPUT
 
-    - name: Setup SSH key
-      uses: webfactory/ssh-agent@v0.9.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-        
-    - name: Add VM to known hosts
-      run: |
-        echo "${{ vars.VM_HOST }} ${{ vars.VM_USER }}"
-        mkdir -p ~/.ssh
-        ssh-keyscan -H ${{ vars.VM_HOST }} >> ~/.ssh/known_hosts
-        
-    - name: Deploy to SSH Server
-      run: |
-        echo "Starting deployment to VM..."
-        
-        # Create deployment directory structure
-        echo "Creating deployment directory..."
-        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 ${{ vars.VM_USER }}@${{ vars.VM_HOST }} "mkdir -p /home/cuvera/${{ vars. SERVICE_NAME }}"
-        
-        # Create backup of current deployment
-        echo "Creating backup of current deployment..."
-        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 ${{ vars.VM_USER }}@${{ vars.VM_HOST }} << 'ENDSSH'
-        if [ -d "/home/cuvera/${{ vars. SERVICE_NAME }}/dist" ]; then
-          mv /home/cuvera/${{ vars. SERVICE_NAME }} /home/cuvera/backup/${{ vars. SERVICE_NAME }}-backup-$(date +%Y%m%d_%H%M%S) || echo "Backup failed, continuing..."
-          mkdir -p /home/cuvera/${{ vars. SERVICE_NAME }}
-        fi
-        ENDSSH
-        
-        # Upload build artifacts
-        echo "Uploading build artifacts..."
-        scp -o StrictHostKeyChecking=no -o ConnectTimeout=30 -r dist/ package*.json ${{ vars.VM_USER }}@${{ vars.VM_HOST }}:/home/cuvera/${{ vars. SERVICE_NAME }}/
-        
-        # Setup Azure artifacts authentication on remote server
-        echo "Setting up Azure artifacts authentication on remote server..."
-        ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 ${{ vars.VM_USER }}@${{ vars.VM_HOST }} << ENDSSH
-        cd /home/cuvera/${{ vars. SERVICE_NAME }}
+          # Extract deployment variables from DEV_ENV
+          echo "${{ vars.DEV_ENV }}" | while IFS='=' read -r key value; do
+            if [ -n "$key" ] && [ -n "$value" ]; then
+              echo "${key}=${value}" >> $GITHUB_OUTPUT
+            fi
+          done
+          
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+      - name: Add host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ steps.deploy_vars.outputs.VM_HOST }} >> ~/.ssh/known_hosts
+          
+      - name: Deploy to dev server
+        run: |
+          # Create .env file from all secrets and vars automatically
+          echo "NODE_ENV=development" > .env
+          
+          # Dump all secrets to .env (excluding sensitive keys)
+          echo "$SECRETS_CONTEXT" | jq -r 'to_entries[] | select(.key != "SSH_PRIVATE_KEY" and .key != "GITHUB_TOKEN") | "\(.key)=\(.value)"' >> .env
+          
+          # Dump all variables to .env
+          echo "$VARS_CONTEXT" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> .env
 
-        # Create .npmrc with proper Azure DevOps authentication
-        echo "@cuvera:registry=https://pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/" > ~/.npmrc
-        echo "always-auth=true" >> ~/.npmrc
-        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:username=${{ vars.AZURE_DEVOPS_USER }}" >> ~/.npmrc
-        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:_password=${{ secrets.AZURE_DEVOPS_TOKEN }}" >> ~/.npmrc
-        echo "//pkgs.dev.azure.com/${{ vars.AZURE_DEVOPS_USER }}/_packaging/${{ vars.AZURE_DEVOPS_USER }}/npm/registry/:email=info@cuvera.ai" >> ~/.npmrc
-        echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
+          VM_USER="${{ steps.deploy_vars.outputs.VM_USER }}"
+          VM_HOST="${{ steps.deploy_vars.outputs.VM_HOST }}"
+          SERVICE_NAME="${{ steps.deploy_vars.outputs.SERVICE_NAME }}"
 
-        cp ~/.npmrc .
+          # Clean variables to remove carriage returns and whitespace
+          VM_USER=$(echo "$VM_USER" | tr -d '\r\n' | xargs)
+          VM_HOST=$(echo "$VM_HOST" | tr -d '\r\n' | xargs)
+          SERVICE_NAME=$(echo "$SERVICE_NAME" | tr -d '\r\n' | xargs)
+          
+          echo "Raw SERVICE_NAME: '${SERVICE_NAME}'"
+          echo "SERVICE_NAME in hex: $(echo -n "$SERVICE_NAME" | xxd)"
+          echo "Target directory: '/home/cuvera/${SERVICE_NAME}'"
 
-        # Create .env file with environment variables
-        echo "Creating .env file..."
-        echo "PORT=${{ vars.VM_PORT }}" > .env
-        echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env
-        echo "NODE_ENV=${{ vars.NODE_ENV }}" >> .env
-        echo "SERVICE_NAME=${{ vars.SERVICE_NAME }}" >> .env
-        echo "FRONTEND_URL=${{ vars.FRONTEND_URL }}" >> .env
-        echo "BASE_URL=${{ vars.BASE_URL }}" >> .env
-        echo "LLM_PROVIDER=${{ vars.LLM_PROVIDER }}" >> .env
-        echo "LLM_API_KEY=${{ secrets.LLM_API_KEY }}" >> .env
-        echo "LLM_MODEL=${{ vars.LLM_MODEL }}" >> .env
-        echo "LLM_BASE_URL=${{ vars.LLM_BASE_URL }}" >> .env
-        echo "LLM_API_VERSION=${{ vars.LLM_API_VERSION }}" >> .env
-
-        echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-        echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
-        echo "JWT_EXPIRES_IN=${{ vars.JWT_EXPIRES_IN }}" >> .env
-        echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> .env
-        echo "JWT_REFRESH_EXPIRES_IN=${{ vars.JWT_REFRESH_EXPIRES_IN }}" >> .env
-        echo "JWT_COOKIE_EXPIRES_IN=${{ vars.JWT_COOKIE_EXPIRES_IN }}" >> .env
-
-        echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
-        echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
-        echo "GOOGLE_CALLBACK_URL=${{ vars.GOOGLE_CALLBACK_URL }}" >> .env
-
-        echo "SAML_ENTRY_POINT=${{ vars.SAML_ENTRY_POINT }}" >> .env
-        echo "SAML_ISSUER=${{ vars.SAML_ISSUER }}" >> .env
-        echo "SAML_CALLBACK_URL=${{ vars.SAML_CALLBACK_URL }}" >> .env
-
-        # Clean install production dependencies
-        echo "Installing production dependencies..."
-        npm install --only=production --audit=false
-        
-        # Check if PM2 is installed
-        if ! command -v pm2 &> /dev/null; then
-          echo "PM2 not found, installing globally..."
-          npm install -g pm2
-        fi
-        
-        # Stop existing service gracefully
-        pm2 stop ${{ vars. SERVICE_NAME }} 2>/dev/null || echo "Service not running or already stopped"
-        pm2 delete ${{ vars. SERVICE_NAME }} 2>/dev/null || echo "Service not found in PM2"
-        
-        # Start the service
-        echo "Starting intelligence service..."
-        pm2 start dist/app.js --name ${{ vars. SERVICE_NAME }} --log /home/cuvera/logs/${{ vars. SERVICE_NAME }}.log --error /home/cuvera/logs/${{ vars. SERVICE_NAME }}-error.log
-        
-        # Save PM2 configuration
-        pm2 save
-        pm2 startup
-        
-        echo "Deployment completed successfully!"
-        ENDSSH
-
-    - name: Health check
-      run: |
-        sleep 10
-        curl -f https://${{ vars.VM_HOST }}/${{ vars. SERVICE_NAME }}/health || exit 1
+          # Create deployment directory
+          ssh "${VM_USER}@${VM_HOST}" "mkdir -p '/home/cuvera/${SERVICE_NAME}' && echo 'Directory created: /home/cuvera/${SERVICE_NAME}' && ls -la /home/cuvera/"
+          
+          # Upload files
+          scp -r dist/ package*.json .env .npmrc "${VM_USER}@${VM_HOST}:/home/cuvera/${SERVICE_NAME}/"
+          
+          # Deploy and restart service
+          ssh "${VM_USER}@${VM_HOST}" << ENDSSH
+          cd "/home/cuvera/${SERVICE_NAME}"
+          
+          # Verify we're in the right directory and files exist
+          echo "Current directory: \$(pwd)"
+          echo "Files in directory:"
+          ls -la
+          
+          # Install production dependencies
+          npm cache clean --force
+          npm install --only=production --audit=false
+          
+          # Check PM2 status before stopping
+          pm2 list
+          
+          # Restart service with PM2
+          pm2 stop "${SERVICE_NAME}" || true
+          pm2 delete "${SERVICE_NAME}" || true
+          pm2 start dist/app.js --name "${SERVICE_NAME}" --update-env
+          pm2 save
+          ENDSSH
+          
+      - name: Health check
+        run: |
+          sleep 15
+          VM_HOST="${{ steps.deploy_vars.outputs.VM_HOST }}"
+          SERVICE_NAME="${{ steps.deploy_vars.outputs.SERVICE_NAME }}"
+          
+          # Clean variables to remove carriage returns and whitespace
+          VM_HOST=$(echo "$VM_HOST" | tr -d '\r\n' | xargs)
+          SERVICE_NAME=$(echo "$SERVICE_NAME" | tr -d '\r\n' | xargs)
+          
+          HEALTH_URL="https://${VM_HOST}/${SERVICE_NAME}/health"
+          echo "Health check URL: $HEALTH_URL"
+          curl -f "$HEALTH_URL" || exit 1

@@ -15,7 +15,6 @@ import { MessageService } from '../services/message';
  * @returns {Promise<string | null>} Employee ID or null if not found
  */
 async function fetchEmployeeDetails(email: string): Promise<string | null> {
-    console.log('URL:', `${process.env.INTEGRATION_SERVICE_URL}/cuvera-ingestion-service/api/v1/employees/email/${email}`);
     try {
         const response = await axios.get(
             `${process.env.INTEGRATION_SERVICE_URL}/cuvera-ingestion-service/api/v1/employees/email/${email}`,
@@ -274,7 +273,7 @@ async function findOrCreateUser(
     }
 
     // Fetch employee details for new user
-    const employeeDetails: any = await fetchEmployeeDetails('media@bullmachine.com');
+    const employeeDetails: any = await fetchEmployeeDetails(email);
 
     // Create new user
     user = new User({

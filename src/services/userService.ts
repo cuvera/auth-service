@@ -7,8 +7,21 @@ export class UserService {
     return user.save();
   }
 
-  async getAllUsers(tenantId: string): Promise<IUser[]> {
-    return User.find({ tenantId }).select('-password');
+  async getAllUsers(tenantId: string, page: number = 1, limit: number = 10): Promise<{ users: IUser[]; totalCount: number; totalPages: number }> {
+    const skip = (page - 1) * limit;
+    
+    const [users, totalCount] = await Promise.all([
+      User.find({ tenantId }).select('-password').skip(skip).limit(limit),
+      User.countDocuments({ tenantId })
+    ]);
+    
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    return {
+      users,
+      totalCount,
+      totalPages
+    };
   }
 
   async getUserById(id: string): Promise<IUser | null> {

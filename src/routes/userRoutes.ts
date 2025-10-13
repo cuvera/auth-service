@@ -5,6 +5,7 @@ import {
     getUserById,
     addUserRoles,
     removeUserRoles,
+    getUserByEmployeeId,
 } from '../controllers/userController';
 import { protect, restrictTo } from '../middlewares/auth';
 
@@ -277,5 +278,40 @@ router.patch('/:id/roles', protect, restrictTo('admin'), addUserRoles);
  *         description: User not found
  */
 router.delete('/:id/roles', protect, restrictTo('admin'), removeUserRoles);
+
+/**
+ * @swagger
+ * /users/employee/{employeeId}:
+ *   get:
+ *     summary: Get user by employee ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: employeeId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Employee ID
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+router.get('/employee/:employeeId', getUserByEmployeeId);
 
 export default router;

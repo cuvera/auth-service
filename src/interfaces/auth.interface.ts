@@ -32,6 +32,9 @@ export interface IJwtPayload {
     roles: string[];
     iat?: number;
     exp?: number;
+    employeeId?: string;
+    department?: string;
+    designation?: string;
 }
 
 export interface IRefreshTokenRequest {

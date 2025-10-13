@@ -32,6 +32,15 @@ export interface IUserResponse {
     employeeId?: string;
 }
 
+export interface IUserWithRolesResponse {
+    id: string;
+    name: string;
+    email: string;
+    roles: string[];
+    createdAt: Date;
+    updatedAt?: Date;
+}
+
 export interface IUpdateUserRequest {
     name?: string;
     email?: string;

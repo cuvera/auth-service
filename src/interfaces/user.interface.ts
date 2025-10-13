@@ -15,6 +15,8 @@ export interface IUser extends Document {
     tenantId: string;
     roles: string[];
     employeeId?: string;
+    department?: string;
+    designation?: string;
 }
 
 export interface ICreateUserRequest {

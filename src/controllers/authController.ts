@@ -139,6 +139,7 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
 
         const { user, tokens } = passportAuthService.handleAuthSuccess(req.user);
 
+
         // Set refresh token as HTTP-only cookie
         const cookieOptions = {
             expires: new Date(
@@ -228,17 +229,11 @@ export const getAuthProviders = catchAsync(async (req: Request, res: Response) =
 // Take bearer token from header and return userId
 export const authorize = catchAsync(async (req: Request, res: Response) => {
     try {
-        console.log('Auth request received:', {
-            method: req.method,
-            headers: req.headers,
-            originalUri: req.headers['x-original-uri']
-        });
 
         // Extract JWT token from Authorization header
         const authHeader = req.headers.authorization;
         
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            console.log('Missing or invalid Authorization header');
             return res.status(401).json({ error: 'Missing or invalid token' });
         }
 
@@ -247,7 +242,6 @@ export const authorize = catchAsync(async (req: Request, res: Response) => {
         // Verify JWT token
         const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
         
-        console.log('Token decoded successfully:', decoded);
 
         // Set user info in response headers for Nginx
         res.set({

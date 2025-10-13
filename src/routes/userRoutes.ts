@@ -3,8 +3,11 @@ import {
     createUser,
     getAllUsers,
     getUserById,
+    addUserRoles,
+    removeUserRoles,
+    getUserByEmployeeId,
 } from '../controllers/userController';
-import { protect } from '../middlewares/auth';
+import { protect, restrictTo } from '../middlewares/auth';
 
 const router = Router();
 
@@ -105,13 +108,29 @@ router.post('/', createUser);
  * @swagger
  * /users:
  *   get:
- *     summary: Get all users
+ *     summary: Get all users with pagination
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of users per page
  *     responses:
  *       200:
- *         description: List of all users
+ *         description: Paginated list of users
  *         content:
  *           application/json:
  *             schema:
@@ -121,6 +140,7 @@ router.post('/', createUser);
  *                   type: string
  *                 results:
  *                   type: number
+ *                   description: Number of users in current page
  *                 data:
  *                   type: object
  *                   properties:
@@ -128,6 +148,20 @@ router.post('/', createUser);
  *                       type: array
  *                       items:
  *                         $ref: '#/components/schemas/User'
+ *                     totalCount:
+ *                       type: integer
+ *                       description: Total number of users
+ *                     page:
+ *                       type: integer
+ *                       description: Current page number
+ *                     limit:
+ *                       type: integer
+ *                       description: Number of items per page
+ *                     totalPages:
+ *                       type: integer
+ *                       description: Total number of pages
+ *       400:
+ *         description: Bad request (invalid pagination parameters)
  */
 router.get('/', protect, getAllUsers);
 
@@ -165,5 +199,150 @@ router.get('/', protect, getAllUsers);
  *         description: User not found
  */
 router.get('/:id', protect, getUserById);
+
+/**
+ * @swagger
+ * /users/{id}/roles:
+ *   patch:
+ *     summary: Add roles to user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - roles
+ *             properties:
+ *               roles:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["admin"]
+ *     responses:
+ *       200:
+ *         description: Roles added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin role required)
+ *       404:
+ *         description: User not found
+ */
+router.patch('/:id/roles', protect, restrictTo('admin'), addUserRoles);
+
+/**
+ * @swagger
+ * /users/{id}/roles:
+ *   delete:
+ *     summary: Remove roles from user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - roles
+ *             properties:
+ *               roles:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["admin"]
+ *     responses:
+ *       200:
+ *         description: Roles removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin role required)
+ *       404:
+ *         description: User not found
+ */
+router.delete('/:id/roles', protect, restrictTo('admin'), removeUserRoles);
+
+/**
+ * @swagger
+ * /users/employee/{employeeId}:
+ *   get:
+ *     summary: Get user by employee ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: employeeId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Employee ID
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+router.get('/employee/:employeeId', getUserByEmployeeId);
 
 export default router;

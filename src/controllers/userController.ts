@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import userService from '../services/userService';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
-import { ICreateUserRequest, IApiResponse, IUserResponse } from '../interfaces';
+import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse, IPaginatedResponse } from '../interfaces';
+import { log } from 'util';
 
 export const createUser = catchAsync(async (req: Request, res: Response) => {
   const { name, email, password }: ICreateUserRequest = req.body;
@@ -19,6 +20,7 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
     email: user.email,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    employeeId: user.employeeId,
   };
 
   const response: IApiResponse<{ user: IUserResponse }> = {
@@ -32,21 +34,42 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
-  const users = await userService.getAllUsers();
+  const tenantId = req.user?.tenantId;
+  if (!tenantId) {
+    throw new AppError('Tenant ID not found', 400);
+  }
 
-  const usersResponse: IUserResponse[] = users.map(user => ({
+  const page = parseInt(req.query.page as string);
+  const limit = parseInt(req.query.limit as string);
+
+  if (page < 1) {
+    throw new AppError('Page must be greater than 0', 400);
+  }
+  if (limit < 1 || limit > 100) {
+    throw new AppError('Limit must be between 1 and 100', 400);
+  }
+
+  const result = await userService.getAllUsers(tenantId, page, limit);
+
+  const usersResponse: IUserWithRolesResponse[] = result.users.map(user => ({
     id: user._id.toString(),
     name: user.name,
     email: user.email,
+    roles: user.roles,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    employeeId: user.employeeId,
   }));
 
-  const response: IApiResponse<{ users: IUserResponse[] }> = {
+  const response: IApiResponse<{ users: IUserWithRolesResponse[]; totalCount: number; page: number; limit: number; totalPages: number }> = {
     status: 'success',
-    results: users.length,
+    results: result.users.length,
     data: {
       users: usersResponse,
+      totalCount: result.totalCount,
+      page,
+      limit,
+      totalPages: result.totalPages,
     },
   };
 
@@ -67,6 +90,7 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
     email: user.email,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    employeeId: user.employeeId,
   };
 
   const response: IApiResponse<{ user: IUserResponse }> = {
@@ -77,4 +101,114 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
   };
 
   res.status(200).json(response);
+});
+
+export const getUserByEmployeeId = catchAsync(async (req: Request, res: Response) => {
+  const { employeeId } = req.params;
+  const user = await userService.getUserByEmployeeId(employeeId);
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  const userResponse: IUserResponse = {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    employeeId: user.employeeId,
+  };
+
+  const response: IApiResponse<{ user: IUserResponse }> = {
+    status: 'success',
+    data: {
+      user: userResponse,
+    },
+  };
+
+  res.status(200).json(response);
+});
+
+export const addUserRoles = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { roles } = req.body;
+
+  if (!roles || !Array.isArray(roles) || roles.length === 0) {
+    throw new AppError('Roles array is required and must not be empty', 400);
+  }
+
+  const nonStringRoles = roles.filter(role => typeof role !== 'string');
+  if (nonStringRoles.length > 0) {
+    throw new AppError('All roles must be strings', 400);
+  }
+
+  const user = await userService.addUserRoles(id, roles);
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  const userResponse: IUserWithRolesResponse = {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    roles: user.roles,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+
+  const response: IApiResponse<{ user: IUserWithRolesResponse }> = {
+    status: 'success',
+    data: {
+      user: userResponse,
+    },
+  };
+
+  res.status(200).json(response);
+});
+
+export const removeUserRoles = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { roles } = req.body;
+
+  if (!roles || !Array.isArray(roles) || roles.length === 0) {
+    throw new AppError('Roles array is required and must not be empty', 400);
+  }
+
+  const nonStringRoles = roles.filter(role => typeof role !== 'string');
+  if (nonStringRoles.length > 0) {
+    throw new AppError('All roles must be strings', 400);
+  }
+
+  try {
+    const user = await userService.removeUserRoles(id, roles);
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const userResponse: IUserWithRolesResponse = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      roles: user.roles,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+
+    const response: IApiResponse<{ user: IUserWithRolesResponse }> = {
+      status: 'success',
+      data: {
+        user: userResponse,
+      },
+    };
+
+    res.status(200).json(response);
+  } catch (error: any) {
+    if (error.message === 'User must have at least one role') {
+      throw new AppError('Cannot remove all roles. User must have at least one role.', 400);
+    }
+    throw error;
+  }
 });

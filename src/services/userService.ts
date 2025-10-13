@@ -7,8 +7,21 @@ export class UserService {
     return user.save();
   }
 
-  async getAllUsers(): Promise<IUser[]> {
-    return User.find().select('-password');
+  async getAllUsers(tenantId: string, page: number = 1, limit: number = 10): Promise<{ users: IUser[]; totalCount: number; totalPages: number }> {
+    const skip = (page - 1) * limit;
+    
+    const [users, totalCount] = await Promise.all([
+      User.find({ tenantId }).select('-password').skip(skip).limit(limit),
+      User.countDocuments({ tenantId })
+    ]);
+    
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    return {
+      users,
+      totalCount,
+      totalPages
+    };
   }
 
   async getUserById(id: string): Promise<IUser | null> {
@@ -17,6 +30,10 @@ export class UserService {
 
   async getUserByEmail(email: string): Promise<IUser | null> {
     return User.findOne({ email }).select('+password');
+  }
+
+  async getUserByEmployeeId(employeeId: string): Promise<IUser | null> {
+    return User.findOne({ employeeId }).select('-password');
   }
 
   async updateUser(
@@ -31,6 +48,43 @@ export class UserService {
 
   async deleteUser(id: string): Promise<IUser | null> {
     return User.findByIdAndDelete(id);
+  }
+
+  async addUserRoles(id: string, newRoles: string[]): Promise<IUser | null> {
+    const user = await User.findById(id);
+    if (!user) {
+      return null;
+    }
+
+    const existingRoles = user.roles || [];
+    const uniqueNewRoles = newRoles.filter(role => !existingRoles.includes(role));
+    const updatedRoles = [...existingRoles, ...uniqueNewRoles];
+
+    return User.findByIdAndUpdate(
+      id,
+      { roles: updatedRoles },
+      { new: true, runValidators: true }
+    ).select('-password');
+  }
+
+  async removeUserRoles(id: string, rolesToRemove: string[]): Promise<IUser | null> {
+    const user = await User.findById(id);
+    if (!user) {
+      return null;
+    }
+
+    const existingRoles = user.roles || [];
+    const updatedRoles = existingRoles.filter(role => !rolesToRemove.includes(role));
+
+    if (updatedRoles.length === 0) {
+      throw new Error('User must have at least one role');
+    }
+
+    return User.findByIdAndUpdate(
+      id,
+      { roles: updatedRoles },
+      { new: true, runValidators: true }
+    ).select('-password');
   }
 }
 

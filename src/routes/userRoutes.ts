@@ -108,13 +108,34 @@ router.post('/', createUser);
  * @swagger
  * /users:
  *   get:
- *     summary: Get all users
+ *     summary: Get all users with pagination and search
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of users per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term to filter users by name or email (case-insensitive, partial match)
  *     responses:
  *       200:
- *         description: List of all users
+ *         description: Paginated list of users
  *         content:
  *           application/json:
  *             schema:
@@ -124,6 +145,7 @@ router.post('/', createUser);
  *                   type: string
  *                 results:
  *                   type: number
+ *                   description: Number of users in current page
  *                 data:
  *                   type: object
  *                   properties:
@@ -131,6 +153,20 @@ router.post('/', createUser);
  *                       type: array
  *                       items:
  *                         $ref: '#/components/schemas/User'
+ *                     totalCount:
+ *                       type: integer
+ *                       description: Total number of users
+ *                     page:
+ *                       type: integer
+ *                       description: Current page number
+ *                     limit:
+ *                       type: integer
+ *                       description: Number of items per page
+ *                     totalPages:
+ *                       type: integer
+ *                       description: Total number of pages
+ *       400:
+ *         description: Bad request (invalid pagination parameters)
  */
 router.get('/', protect, getAllUsers);
 

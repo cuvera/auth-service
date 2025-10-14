@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import userService from '../services/userService';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
-import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse } from '../interfaces';
+import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse, IPaginatedResponse } from '../interfaces';
+import { log } from 'util';
 
 export const createUser = catchAsync(async (req: Request, res: Response) => {
   const { name, email, password }: ICreateUserRequest = req.body;
@@ -37,9 +38,21 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   if (!tenantId) {
     throw new AppError('Tenant ID not found', 400);
   }
-  const users = await userService.getAllUsers(tenantId);
 
-  const usersResponse: IUserWithRolesResponse[] = users.map(user => ({
+  const page = parseInt(req.query.page as string);
+  const limit = parseInt(req.query.limit as string);
+  const search = req.query.search as string;
+  
+  if (page < 1) {
+    throw new AppError('Page must be greater than 0', 400);
+  }
+  if (limit < 1 || limit > 100) {
+    throw new AppError('Limit must be between 1 and 100', 400);
+  }
+
+  const result = await userService.getAllUsers(tenantId, page, limit, search);
+
+  const usersResponse: IUserWithRolesResponse[] = result.users.map(user => ({
     id: user._id.toString(),
     name: user.name,
     email: user.email,
@@ -49,11 +62,15 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     employeeId: user.employeeId,
   }));
 
-  const response: IApiResponse<{ users: IUserWithRolesResponse[] }> = {
+  const response: IApiResponse<{ users: IUserWithRolesResponse[]; totalCount: number; page: number; limit: number; totalPages: number }> = {
     status: 'success',
-    results: users.length,
+    results: result.users.length,
     data: {
       users: usersResponse,
+      totalCount: result.totalCount,
+      page,
+      limit,
+      totalPages: result.totalPages,
     },
   };
 

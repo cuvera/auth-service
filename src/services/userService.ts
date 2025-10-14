@@ -7,8 +7,34 @@ export class UserService {
     return user.save();
   }
 
-  async getAllUsers(tenantId: string): Promise<IUser[]> {
-    return User.find({ tenantId }).select('-password');
+  async getAllUsers(tenantId: string, page: number = 1, limit: number = 10, search?: string): Promise<{ users: IUser[]; totalCount: number; totalPages: number }> {
+    const skip = (page - 1) * limit;
+    
+    let searchQuery: any = { tenantId };
+    
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i'); 
+      searchQuery = {
+        ...searchQuery,
+        $or: [
+          { name: { $regex: searchRegex } },
+          { email: { $regex: searchRegex } }
+        ]
+      };
+    }
+    
+    const [users, totalCount] = await Promise.all([
+      User.find(searchQuery).select('-password').skip(skip).limit(limit),
+      User.countDocuments(searchQuery)
+    ]);
+    
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    return {
+      users,
+      totalCount,
+      totalPages
+    };
   }
 
   async getUserById(id: string): Promise<IUser | null> {

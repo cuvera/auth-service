@@ -152,7 +152,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                     provider: 'google',
                     name: user.name,
                     userId: user._id,
-                    tenantId: user.tenantId,
+                    tenantId: process.env.TENANT_ID,
                     eventType: isNewUser ? 'sign-up' : 'sign-in',
                     status: 'SUCCESS',
                     ipAddress: requestData.ip || req.ip,
@@ -210,7 +210,8 @@ async function sendAuthLog(payload: any): Promise<void> {
             errorCode : payload.errorCode,
             endpoint : payload.endpoint,
             httpMethod : payload.httpMethod,
-            metadata : payload.metadata
+            metadata : payload.metadata,
+            tenantId: payload.tenantId
 
         }
 

@@ -41,7 +41,8 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
 
   const page = parseInt(req.query.page as string);
   const limit = parseInt(req.query.limit as string);
-
+  const search = req.query.search as string;
+  
   if (page < 1) {
     throw new AppError('Page must be greater than 0', 400);
   }
@@ -49,7 +50,7 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('Limit must be between 1 and 100', 400);
   }
 
-  const result = await userService.getAllUsers(tenantId, page, limit);
+  const result = await userService.getAllUsers(tenantId, page, limit, search);
 
   const usersResponse: IUserWithRolesResponse[] = result.users.map(user => ({
     id: user._id.toString(),

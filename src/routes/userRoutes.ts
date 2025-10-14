@@ -108,7 +108,7 @@ router.post('/', createUser);
  * @swagger
  * /users:
  *   get:
- *     summary: Get all users with pagination
+ *     summary: Get all users with pagination and search
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -128,6 +128,11 @@ router.post('/', createUser);
  *           maximum: 100
  *           default: 10
  *         description: Number of users per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term to filter users by name or email (case-insensitive, partial match)
  *     responses:
  *       200:
  *         description: Paginated list of users

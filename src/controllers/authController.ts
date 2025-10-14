@@ -129,11 +129,13 @@ export const googleAuth = catchAsync(async (req: Request, res: Response, next: F
 export const googleCallback = catchAsync(async (req: Request, res: Response, next: Function) => {
     passportAuthService.authenticateGoogleCallback()(req, res, (err: any) => {
         const origin = req.headers.origin || process.env.FRONTEND_URL;
-        if (err) {
+        if (err && err.message === "No state found") {
+            console.log("googleCallback", err);
             return res.redirect(`${origin}/login?error=google_auth_failed`);
         }
 
         if (!req.user) {
+            console.log("req.user", req.user);
             return res.redirect(`${origin}/login?error=google_auth_failed`);
         }
 

@@ -251,7 +251,11 @@ export const authorize = catchAsync(async (req: Request, res: Response) => {
             'tenant-id': decoded.tenantId,
             'roles': Array.isArray(decoded.roles) ? decoded.roles.join(',') : decoded.roles,
             'email': decoded.email,
-            'username': decoded.username
+            'name': decoded.name,
+            'username': decoded.username,
+            'employee-id': decoded.employeeId,
+            'department': decoded.department,
+            'designation': decoded.designation,
         });
 
         // Return 200 OK with empty body

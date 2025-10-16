@@ -253,7 +253,7 @@ export const authorize = catchAsync(async (req: Request, res: Response) => {
             'email': decoded.email,
             'name': decoded.name,
             'username': decoded.username,
-            'employeeId': decoded.employeeId,
+            'employee-id': decoded.employeeId,
             'department': decoded.department,
             'designation': decoded.designation,
         });

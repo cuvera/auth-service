@@ -33,7 +33,8 @@ const corsOptions = {
         'http://127.0.0.1:3000',
         'http://127.0.0.1:5173',
         'https://accounts.google.com/',
-        'http://localhost:5173/'
+        'http://localhost:5173/',
+        'https://demo.cuvera.ai'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

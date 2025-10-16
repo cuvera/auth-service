@@ -11,7 +11,7 @@ import authRoutes from './routes/authRoutes';
 import { globalErrorHandler } from './middlewares/errorHandler';
 import { setupSwagger } from './config/swagger';
 import { AppError } from './utils/appError';
-
+import {producer} from './messaging/producers/producer';
 // Load environment variables
 dotenv.config();
 
@@ -113,10 +113,31 @@ app.all('*', (req, res, next) => {
 app.use(globalErrorHandler);
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📚 API Documentation available at ${process.env.BASE_URL}/api-docs`);
-    console.log(`🏥 Health check available at ${process.env.BASE_URL}/health`);
+const server = app.listen(PORT, async () => {
+    try {
+      await producer.initialize();
+      console.log(` Server running on port ${PORT}`);
+      console.log(` API Documentation available at http://localhost:${PORT}/api-docs`);
+      console.log(` Health check available at http://localhost:${PORT}/cuvera-core-service/health`);
+  
+      // 🟢 Start cron scheduler (jobs run only if SCHEDULER_ENABLED=true)
+    } catch (error) {
+      console.error('Failed to initialize services:', error);
+    }
 });
+
+process.on('unhandledRejection', async (err: Error) => {
+    console.error('UNHANDLED REJECTION! Shutting down...');
+    console.error(err.name, err);
+    try {
+      await close();
+    } catch (error) {
+      console.error('Error closing RabbitMQ connection:', error);
+    }
+    server.close(() => {
+      process.exit(1);
+    });
+  });
+
 
 export default app;

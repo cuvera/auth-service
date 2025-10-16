@@ -13,14 +13,25 @@ export class PassportAuthService {
     }
     // Google OAuth authentication wrapper
     authenticateGoogle(req: Request) {
+        // Create a state object with the request data we need
+        const stateData = {
+            originalUrl: req.originalUrl,
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+            // Add any other request data you need
+            ...(req.query.state ? { originalState: req.query.state } : {})
+        };
+
         const options: any = {
             scope: ['profile', 'email'],
+            // Encode the state as a URL-safe string
+            state: Buffer.from(JSON.stringify(stateData)).toString('base64')
         };
 
         if (this.isIOS(req)) {
             options.prompt = "select_account";
         }
-
+        
         return passport.authenticate('google', options);
     }
 
@@ -89,7 +100,10 @@ export class PassportAuthService {
             email: user.email,
             name: user.name,
             tenantId: user.tenantId,
-            roles: user.roles
+            roles: user?.roles,
+            employeeId: user?.employeeId,
+            department: user?.department,
+            designation: user?.designation
         });
 
         return { user, tokens };

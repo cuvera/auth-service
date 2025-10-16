@@ -55,6 +55,12 @@ const userSchema = new Schema<IUser>(
     employeeId: {
       type: String,
     },
+    department: {
+      type: String,
+    },
+    designation: {
+      type: String,
+    },
   },
   {
     timestamps: true,

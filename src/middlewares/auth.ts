@@ -58,11 +58,23 @@ export const protectManual = async (req: Request, res: Response, next: NextFunct
     }
 };
 
-// Middleware to restrict access to certain roles (for future use)
+// Middleware to restrict access to certain roles
 export const restrictTo = (...roles: string[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
-        // For now, we don't have roles in our user model
-        // This is a placeholder for future role-based access control
+        if (!req.user) {
+            return next(new AppError('You are not logged in! Please log in to get access.', 401));
+        }
+
+        if (!req.user.roles || req.user.roles.length === 0) {
+            return next(new AppError('You do not have permission to perform this action.', 403));
+        }
+
+        const hasRequiredRole = roles.some(role => req.user!.roles.includes(role));
+        
+        if (!hasRequiredRole) {
+            return next(new AppError('You do not have permission to perform this action.', 403));
+        }
+
         next();
     };
 };

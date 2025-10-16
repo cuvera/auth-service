@@ -15,6 +15,8 @@ export interface IUser extends Document {
     tenantId: string;
     roles: string[];
     employeeId?: string;
+    department?: string;
+    designation?: string;
 }
 
 export interface ICreateUserRequest {
@@ -30,6 +32,15 @@ export interface IUserResponse {
     createdAt: Date;
     updatedAt?: Date;
     employeeId?: string;
+}
+
+export interface IUserWithRolesResponse {
+    id: string;
+    name: string;
+    email: string;
+    roles: string[];
+    createdAt: Date;
+    updatedAt?: Date;
 }
 
 export interface IUpdateUserRequest {

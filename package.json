@@ -21,8 +21,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@cuvera/commons": "1.1.0",
+    "@cuvera/commons": "^1.2.3",
     "@types/express-session": "^1.18.2",
+    "amqplib": "^0.10.9",
     "axios": "^1.12.2",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
@@ -42,6 +43,7 @@
     "validator": "^13.11.0"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.7",
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.6",
     "@types/cors": "^2.8.17",

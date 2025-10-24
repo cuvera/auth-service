@@ -28,7 +28,10 @@ export class AuthService {
             email: user.email,
             name: user.name, 
             tenantId: user.tenantId,
-            roles: user.roles
+            roles: user.roles,
+            employeeId: user?.employeeId,
+            department: user?.department,
+            designation: user?.designation
         });
 
         return { user, tokens };
@@ -49,7 +52,10 @@ export class AuthService {
             email: user.email,
             name: user.name,
             tenantId: user.tenantId,
-            roles: user.roles 
+            roles: user.roles,
+            employeeId: user?.employeeId,
+            department: user?.department,
+            designation: user?.designation 
         });
 
         return { user, tokens };
@@ -71,7 +77,10 @@ export class AuthService {
                 email: user.email,
                 name: user.name,
                 tenantId: user.tenantId,
-                roles: user.roles
+                roles: user.roles,
+                employeeId: user?.employeeId,
+                department: user?.department,
+                designation: user?.designation 
             });
 
             return tokens;

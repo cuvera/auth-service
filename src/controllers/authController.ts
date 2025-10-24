@@ -129,11 +129,13 @@ export const googleAuth = catchAsync(async (req: Request, res: Response, next: F
 export const googleCallback = catchAsync(async (req: Request, res: Response, next: Function) => {
     passportAuthService.authenticateGoogleCallback()(req, res, (err: any) => {
         const origin = req.headers.origin || process.env.FRONTEND_URL;
-        if (err) {
+        if (err && err.message === "No state found") {
+            console.log("googleCallback", err);
             return res.redirect(`${origin}/login?error=google_auth_failed`);
         }
 
         if (!req.user) {
+            console.log("req.user", req.user);
             return res.redirect(`${origin}/login?error=google_auth_failed`);
         }
 
@@ -249,7 +251,11 @@ export const authorize = catchAsync(async (req: Request, res: Response) => {
             'tenant-id': decoded.tenantId,
             'roles': Array.isArray(decoded.roles) ? decoded.roles.join(',') : decoded.roles,
             'email': decoded.email,
-            'username': decoded.username
+            'name': decoded.name,
+            'username': decoded.username,
+            'employee-id': decoded.employeeId,
+            'department': decoded.department,
+            'designation': decoded.designation,
         });
 
         // Return 200 OK with empty body

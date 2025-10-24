@@ -29,9 +29,9 @@ export class AuthService {
             name: user.name, 
             tenantId: user.tenantId,
             roles: user.roles,
-            employeeId: user.employeeId,
-            department: user.department,
-            designation: user.designation
+            employeeId: user?.employeeId,
+            department: user?.department,
+            designation: user?.designation
         });
 
         return { user, tokens };
@@ -53,9 +53,9 @@ export class AuthService {
             name: user.name,
             tenantId: user.tenantId,
             roles: user.roles,
-            employeeId: user.employeeId,
-            department: user.department,
-            designation: user.designation 
+            employeeId: user?.employeeId,
+            department: user?.department,
+            designation: user?.designation 
         });
 
         return { user, tokens };
@@ -78,9 +78,9 @@ export class AuthService {
                 name: user.name,
                 tenantId: user.tenantId,
                 roles: user.roles,
-                employeeId: user.employeeId,
-                department: user.department,
-                designation: user.designation 
+                employeeId: user?.employeeId,
+                department: user?.department,
+                designation: user?.designation 
             });
 
             return tokens;

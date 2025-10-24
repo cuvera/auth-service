@@ -72,9 +72,9 @@ export const createTokens = (user: {
         name: user.name,
         tenantId: user.tenantId,
         roles: user.roles,
-        employeeId: user.employeeId,
-        department: user.department,
-        designation: user.designation
+        employeeId: user?.employeeId,
+        department: user?.department,
+        designation: user?.designation
 
     };
 

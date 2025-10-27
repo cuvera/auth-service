@@ -116,7 +116,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                     try {
                         const decodedState = Buffer.from(req.query.state, 'base64').toString('utf-8');
                         requestData = JSON.parse(decodedState);
-                        console.log('Request data from state:', requestData);
                     } catch (error) {
                         console.error('Error parsing state data:', error);
                     }

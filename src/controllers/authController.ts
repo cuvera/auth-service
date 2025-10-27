@@ -127,16 +127,27 @@ export const googleAuth = catchAsync(async (req: Request, res: Response, next: F
 });
 
 export const googleCallback = catchAsync(async (req: Request, res: Response, next: Function) => {
-    passportAuthService.authenticateGoogleCallback()(req, res, (err: any) => {
-        const origin = req.headers.origin || process.env.FRONTEND_URL;
-        if (err && err.message === "No state found") {
-            console.log("googleCallback", err);
-            return res.redirect(`${origin}/login?error=google_auth_failed`);
+    passportAuthService.authenticateGoogleCallback()(req, res, (err: any) => { 
+        let frontendUrl = process.env.FRONTEND_URL;        
+        if (req.query.state) {
+            try {
+                const decodedState = Buffer.from(req.query.state as string, 'base64').toString('utf-8');
+                const requestData = JSON.parse(decodedState);
+                frontendUrl = requestData?.originalState || process.env.FRONTEND_URL;
+
+            } catch (e) {
+                console.error('Error parsing state:', e);
+            }
+        }
+
+        if (err) {
+            console.log("googleCallback", err.message);
+            return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
         }
 
         if (!req.user) {
             console.log("req.user", req.user);
-            return res.redirect(`${origin}/login?error=google_auth_failed`);
+            return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
         }
 
         const { user, tokens } = passportAuthService.handleAuthSuccess(req.user);
@@ -153,8 +164,7 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
 
         res.cookie('refreshToken', tokens.refreshToken, cookieOptions);
 
-        // Redirect to frontend login page with access token
-        res.redirect(`${origin}/login?token=${tokens.accessToken}`);
+        res.redirect(`${frontendUrl}/login?token=${tokens.accessToken}`);
     });
 });
 

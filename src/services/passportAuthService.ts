@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import passport from '../config/passport';
 import { createTokens } from '../utils/jwt';
 import { AppError } from '../utils/appError';
@@ -38,11 +38,41 @@ export class PassportAuthService {
 
     // Google OAuth callback wrapper
     authenticateGoogleCallback() {
-        return passport.authenticate('google', {
-            session: false,
-            failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed`,
-        });
+        return (req: Request, res: Response, next: NextFunction) => {
+            passport.authenticate('google', { session: false }, (err: any, user: any, info: any) => {
+                let frontendUrl = process.env.FRONTEND_URL || '';
+                
+                // Try to get frontend URL from state parameter
+                if (req.query.state) {
+                    try {
+                        const decodedState = Buffer.from(req.query.state as string, 'base64').toString('utf-8');
+                        const requestData = JSON.parse(decodedState);
+                        frontendUrl = requestData?.originalState || frontendUrl;
+                    } catch (e) {
+                        console.error('Error parsing state in passport service:', e);
+                    }
+                }
+                if (err) {
+                    const errorMessage = encodeURIComponent(err.message || 'Unknown error occurred');
+                    return res.redirect(`${frontendUrl}/login?error=google_auth_failed&message=${errorMessage}`);
+                }
+                
+                if (!user) {
+                    const errorMessage = encodeURIComponent(info?.message || 'Authentication failed');
+                    return res.redirect(`${frontendUrl}/login?error=google_auth_failed&message=${errorMessage}`);
+                }
+                req.user = user;
+                next();
+            })(req, res, next);
+        };
     }
+    // authenticateGoogleCallback() {
+    //     return passport.authenticate('google', {
+    //         session: false,
+    //         failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed`,
+    //     });
+    // }
+
 
     // SAML authentication wrapper
     authenticateSaml() {

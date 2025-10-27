@@ -116,7 +116,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                     try {
                         const decodedState = Buffer.from(req.query.state, 'base64').toString('utf-8');
                         requestData = JSON.parse(decodedState);
-                        console.log('Request data from state:', requestData);
                     } catch (error) {
                         console.error('Error parsing state data:', error);
                     }
@@ -240,7 +239,7 @@ function validateEmailAccess(email: string): { allowed: boolean; message?: strin
         }
 
         const errorMessage = allowedDomain 
-            ? `Access denied. Only ${allowedDomain} email addresses or whitelisted emails are permitted.`
+            ? `Access denied. Sorry!! You are not the part of the organization.`
             : 'Access denied. Your email is not in the allowed list.';
         
         return { allowed: false, message: errorMessage };

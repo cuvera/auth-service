@@ -240,7 +240,7 @@ function validateEmailAccess(email: string): { allowed: boolean; message?: strin
         }
 
         const errorMessage = allowedDomain 
-            ? `Access denied. Only ${allowedDomain} email addresses or whitelisted emails are permitted.`
+            ? `Access denied. Sorry!! You are not the part of the organization.`
             : 'Access denied. Your email is not in the allowed list.';
         
         return { allowed: false, message: errorMessage };

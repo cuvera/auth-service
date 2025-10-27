@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import passport from '../config/passport';
 import { createTokens } from '../utils/jwt';
 import { AppError } from '../utils/appError';
@@ -38,10 +38,26 @@ export class PassportAuthService {
 
     // Google OAuth callback wrapper
     authenticateGoogleCallback() {
-        return passport.authenticate('google', {
-            session: false,
-            failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed`,
-        });
+        return (req: Request, res: Response, next: NextFunction) => {
+            passport.authenticate('google', { session: false }, (err: any, user: any, info: any) => {
+                if (err) {
+                    return res.status(401).json({
+                        status: 'error',
+                        message: 'Google authentication failed',
+                        details: err.message || 'Unknown error occurred'
+                    });
+                }
+                if (!user) {
+                    return res.status(401).json({
+                        status: 'error',
+                        message: 'Google authentication failed',
+                        details: info?.message || 'Authentication failed'
+                    });
+                }
+                req.user = user;
+                next();
+            })(req, res, next);
+        };
     }
 
     // SAML authentication wrapper

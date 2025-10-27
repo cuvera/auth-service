@@ -52,7 +52,6 @@ export class PassportAuthService {
                         console.error('Error parsing state in passport service:', e);
                     }
                 }
-                
                 if (err) {
                     const errorMessage = encodeURIComponent(err.message || 'Unknown error occurred');
                     return res.redirect(`${frontendUrl}/login?error=google_auth_failed&message=${errorMessage}`);

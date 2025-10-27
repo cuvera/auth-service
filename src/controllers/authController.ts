@@ -140,20 +140,14 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
             }
         }
 
-        if (err && err.message === "No state found") {
-            return res.status(401).json({
-                status: 'error',
-                message: 'Google authentication failed: No state found',
-                frontendUrl: frontendUrl // Include frontend URL in error response
-            });
+        if (err) {
+            console.log("googleCallback", err.message);
+            return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
         }
 
         if (!req.user) {
             console.log("req.user", req.user);
-            return res.status(401).json({
-                status: 'error',
-                message: 'Google authentication failed: User not found'
-            });
+            return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
         }
 
         const { user, tokens } = passportAuthService.handleAuthSuccess(req.user);

@@ -128,13 +128,12 @@ export const googleAuth = catchAsync(async (req: Request, res: Response, next: F
 
 export const googleCallback = catchAsync(async (req: Request, res: Response, next: Function) => {
     passportAuthService.authenticateGoogleCallback()(req, res, (err: any) => { 
-        let frontendUrl = process.env.FRONTEND_URL || '';        
-        // Try to get frontend URL from state parameter
+        let frontendUrl = process.env.FRONTEND_URL;        
         if (req.query.state) {
             try {
                 const decodedState = Buffer.from(req.query.state as string, 'base64').toString('utf-8');
                 const requestData = JSON.parse(decodedState);
-                frontendUrl = requestData?.originalState;
+                frontendUrl = requestData?.originalState || process.env.FRONTEND_URL;
 
             } catch (e) {
                 console.error('Error parsing state:', e);
@@ -142,7 +141,6 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
         }
 
         if (err && err.message === "No state found") {
-            console.log("googleCallback", err);
             return res.status(401).json({
                 status: 'error',
                 message: 'Google authentication failed: No state found',

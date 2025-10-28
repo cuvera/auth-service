@@ -239,8 +239,8 @@ function validateEmailAccess(email: string): { allowed: boolean; message?: strin
         }
 
         const errorMessage = allowedDomain 
-            ? `Access denied. Sorry!! You are not the part of the organization.`
-            : 'Access denied. Your email is not in the allowed list.';
+            ? `Sorry! You are not part of the organization. Please contact your administrator to get access.`
+            : 'Sorry!! Your email is not in the allowed list.';
         
         return { allowed: false, message: errorMessage };
     } catch (error) {

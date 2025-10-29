@@ -395,6 +395,6 @@ router.get('/employee/:employeeId', getUserByEmployeeId);
  *       403:
  *         description: Forbidden - Requires admin role
  */
-router.get('/departments/counts', restrictTo('admin'), getDepartmentUserCounts);
+router.get('/departments/counts', getDepartmentUserCounts);
 
 export default router;

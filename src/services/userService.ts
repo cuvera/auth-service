@@ -100,9 +100,9 @@ export class UserService {
     ).select('-password');
   }
 
-  async getDepartmentUserCounts(tenantId: string): Promise<{ department: string; count: number }[]> {
+  async getDepartmentUserCounts(): Promise<{ department: string; count: number }[]> {
     const result = await User.aggregate([
-      { $match: { tenantId, department: { $exists: true, $ne: null } } },
+      { $match: {  department: { $exists: true, $ne: null } } },
       { $group: { _id: '$department', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $project: { _id: 0, department: '$_id', count: 1 } }

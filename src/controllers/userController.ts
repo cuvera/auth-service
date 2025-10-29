@@ -171,11 +171,12 @@ export const addUserRoles = catchAsync(async (req: Request, res: Response) => {
 
 export const getDepartmentUserCounts = catchAsync(async (req: Request, res: Response) => {
   const tenantId = req.user?.tenantId;
-  if (!tenantId) {
-    throw new AppError('Tenant ID not found', 400);
-  }
+  // if (!tenantId) {
+  //   throw new AppError('Tenant ID not found', 400);
+  // }
 
-  const departmentCounts = await userService.getDepartmentUserCounts(tenantId);
+  // const departmentCounts = await userService.getDepartmentUserCounts(tenantId);
+  const departmentCounts = await userService.getDepartmentUserCounts();
 
   const response: IApiResponse<{ departments: { department: string; count: number }[] }> = {
     status: 'success',

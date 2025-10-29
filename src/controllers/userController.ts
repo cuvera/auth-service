@@ -169,6 +169,25 @@ export const addUserRoles = catchAsync(async (req: Request, res: Response) => {
   res.status(200).json(response);
 });
 
+export const getDepartmentUserCounts = catchAsync(async (req: Request, res: Response) => {
+  const tenantId = req.user?.tenantId;
+  if (!tenantId) {
+    throw new AppError('Tenant ID not found', 400);
+  }
+
+  const departmentCounts = await userService.getDepartmentUserCounts(tenantId);
+
+  const response: IApiResponse<{ departments: { department: string; count: number }[] }> = {
+    status: 'success',
+    results: departmentCounts.length,
+    data: {
+      departments: departmentCounts
+    }
+  };
+
+  res.status(200).json(response);
+});
+
 export const removeUserRoles = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const { roles } = req.body;

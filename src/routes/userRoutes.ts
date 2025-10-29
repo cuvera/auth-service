@@ -6,6 +6,7 @@ import {
     addUserRoles,
     removeUserRoles,
     getUserByEmployeeId,
+    getDepartmentUserCounts,
 } from '../controllers/userController';
 import { protect, restrictTo } from '../middlewares/auth';
 
@@ -349,5 +350,51 @@ router.delete('/:id/roles', protect, restrictTo('admin'), removeUserRoles);
  *         description: User not found
  */
 router.get('/employee/:employeeId', getUserByEmployeeId);
+
+/**
+ * @swagger
+ * /users/departments/counts:
+ *   get:
+ *     summary: Get user counts by department
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Returns the count of users in each department
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 results:
+ *                   type: integer
+ *                   description: Number of departments returned
+ *                   example: 3
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     departments:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           department:
+ *                             type: string
+ *                             description: Department name
+ *                             example: Engineering
+ *                           count:
+ *                             type: integer
+ *                             description: Number of users in the department
+ *                             example: 5
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Forbidden - Requires admin role
+ */
+router.get('/departments/counts', restrictTo('admin'), getDepartmentUserCounts);
 
 export default router;

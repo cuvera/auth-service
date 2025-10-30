@@ -101,14 +101,12 @@ export class UserService {
   }
 
   async getDepartmentUserCounts(): Promise<{ department: string; count: number; percentage: number }[]> {
-    // First, get the total count of users with a department
     const totalCount = await User.countDocuments({ department: { $exists: true, $ne: null } });
     
     if (totalCount === 0) {
       return [];
     }
 
-    // Then get the department counts
     const departmentCounts = await User.aggregate([
       { $match: { department: { $exists: true, $ne: null } } },
       { $group: { _id: '$department', count: { $sum: 1 } } },
@@ -121,7 +119,7 @@ export class UserService {
           percentage: {
             $round: [
               { $multiply: [{ $divide: [{ $toDouble: '$count' }, totalCount] }, 100] },
-              2 // Round to 2 decimal places
+              2
             ]
           }
         }

@@ -100,15 +100,35 @@ export class UserService {
     ).select('-password');
   }
 
-  async getDepartmentUserCounts(): Promise<{ department: string; count: number }[]> {
-    const result = await User.aggregate([
-      { $match: {  department: { $exists: true, $ne: null } } },
+  async getDepartmentUserCounts(): Promise<{ department: string; count: number; percentage: number }[]> {
+    // First, get the total count of users with a department
+    const totalCount = await User.countDocuments({ department: { $exists: true, $ne: null } });
+    
+    if (totalCount === 0) {
+      return [];
+    }
+
+    // Then get the department counts
+    const departmentCounts = await User.aggregate([
+      { $match: { department: { $exists: true, $ne: null } } },
       { $group: { _id: '$department', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $project: { _id: 0, department: '$_id', count: 1 } }
+      {
+        $project: {
+          _id: 0,
+          department: '$_id',
+          count: 1,
+          percentage: {
+            $round: [
+              { $multiply: [{ $divide: [{ $toDouble: '$count' }, totalCount] }, 100] },
+              2 // Round to 2 decimal places
+            ]
+          }
+        }
+      }
     ]);
     
-    return result;
+    return departmentCounts;
   }
 }
 

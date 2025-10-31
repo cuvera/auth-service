@@ -48,7 +48,7 @@ export class UserService {
   async getUserByEmployeeId(employeeId: string): Promise<IUser | null> {
     return User.findOne({ employeeId }).select('-password');
   }
-
+  //
   async updateUser(
     id: string,
     updateData: IUpdateUserRequest

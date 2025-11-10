@@ -5,6 +5,7 @@ import authService from '../services/authService';
 import passportAuthService from '../services/passportAuthService';
 import { IRegisterRequest, ILoginRequest, IRefreshTokenRequest, IApiResponse, IAuthResponse } from '../interfaces';
 import jwt from 'jsonwebtoken';
+import { MessageService } from '../services/message';
 
 const createSendToken = (user: any, tokens: any, statusCode: number, res: Response) => {
     const cookieOptions = {
@@ -88,17 +89,51 @@ export const refreshToken = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const logout = catchAsync(async (req: Request, res: Response) => {
-    res.cookie('refreshToken', 'loggedout', {
-        expires: new Date(Date.now() + 10 * 1000),
-        httpOnly: true,
-    });
+    let data: any = {
+        userId: req.user?.id,
+        username: req.user?.name,
+        userEmail: req.user?.email,
+        action: 'LOGOUT',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+        endpoint : req.originalUrl,
+        httpMethod : req.method,
+        metadata : {
+            tenantId: process.env.TENANT_ID || req.user?.tenantId,
+        },
+        serviceName: process.env.SERVICE_NAME || 'auth-service'
 
-    const response: IApiResponse<null> = {
-        status: 'success',
-        message: 'Logged out successfully',
-    };
+    }
+    try{
+        res.cookie('refreshToken', 'loggedout', {
+            expires: new Date(Date.now() + 10 * 1000),
+            httpOnly: true,
+        });
 
-    res.status(200).json(response);
+        const response: IApiResponse<null> = {
+            status: 'success',
+            message: 'Logged out successfully',
+        };
+        res.status(200).json(response);
+        data.description = 'User logged out successfully';
+        data.changes = 'User logged out successfully';
+        data.status = 'success';
+        await MessageService.sendAuthLogsMessage(data);
+    }
+    catch (error: any) {
+        res.status(500).json({
+            status: 'error',
+            message: 'Error logging out',
+            error: {
+                statusCode: 500,
+                status: 'error'
+            }
+        });
+        data.errorMessage =  error.message;
+        data.errorCode = 500;
+        data.status = 'error';
+        await MessageService.sendAuthLogsMessage(data);
+    }
 });
 
 export const getMe = catchAsync(async (req: Request, res: Response) => {

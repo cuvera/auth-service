@@ -210,7 +210,8 @@ async function sendAuthLog(payload: any): Promise<void> {
             endpoint : payload.endpoint,
             httpMethod : payload.httpMethod,
             metadata : payload.metadata,
-            tenantId: payload.tenantId
+            tenantId: payload.tenantId,
+            serviceName: process.env.SERVICE_NAME || 'auth-service'
 
         }
 

@@ -9,11 +9,11 @@ export class UserService {
 
   async getAllUsers(tenantId: string, page: number = 1, limit: number = 10, search?: string): Promise<{ users: IUser[]; totalCount: number; totalPages: number }> {
     const skip = (page - 1) * limit;
-    
+
     let searchQuery: any = { tenantId };
-    
+
     if (search && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), 'i'); 
+      const searchRegex = new RegExp(search.trim(), 'i');
       searchQuery = {
         ...searchQuery,
         $or: [
@@ -22,14 +22,14 @@ export class UserService {
         ]
       };
     }
-    
+
     const [users, totalCount] = await Promise.all([
       User.find(searchQuery).select('-password').skip(skip).limit(limit),
       User.countDocuments(searchQuery)
     ]);
-    
+
     const totalPages = Math.ceil(totalCount / limit);
-    
+
     return {
       users,
       totalCount,
@@ -48,7 +48,6 @@ export class UserService {
   async getUserByEmployeeId(employeeId: string): Promise<IUser | null> {
     return User.findOne({ employeeId }).select('-password');
   }
-  //
   async updateUser(
     id: string,
     updateData: IUpdateUserRequest
@@ -102,7 +101,7 @@ export class UserService {
 
   async getDepartmentUserCounts(): Promise<{ department: string; count: number; percentage: number }[]> {
     const totalCount = await User.countDocuments({ department: { $exists: true, $ne: null } });
-    
+
     if (totalCount === 0) {
       return [];
     }
@@ -125,7 +124,7 @@ export class UserService {
         }
       }
     ]);
-    
+
     return departmentCounts;
   }
 }

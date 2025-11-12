@@ -4,6 +4,7 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as SamlStrategy } from 'passport-saml';
 import axios from 'axios';
 import User from '../models/User';
+import ImportedUser from '../models/ImportedUser';
 import { IJwtPayload } from '../interfaces';
 import fs from 'fs';
 import path from 'path';
@@ -122,7 +123,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                 }
 
                 // Validate email access
-                const isAuthorized = validateEmailAccess(email);
+                const isAuthorized = await validateEmailAccess(email);
                 console.log("isAuthorized", isAuthorized);
                 if (!isAuthorized.allowed) {
                     await sendAuthLog({
@@ -224,21 +225,24 @@ async function sendAuthLog(payload: any): Promise<void> {
     }
 }
 
-function validateEmailAccess(email: string): { allowed: boolean; message?: string } {
+async function validateEmailAccess(email: string): Promise<{ allowed: boolean; message?: string }> {
     try {
         const allowedDomain = process.env.GOOGLE_DOMAIN_NAME;
-        const allowedEmails = process.env.ALLOWED_EMAILS
-            ? process.env.ALLOWED_EMAILS.split(',').map(e => e.trim())
-            : [];
 
+        const importedUser = await ImportedUser.findOne({
+            email: email.toLowerCase(),
+            tenantId: process.env.TENANT_ID || 'default'
+        });
+        console.log("importedUser", importedUser)
         const emailDomain = email.split('@')[1];
         const isDomainAllowed = allowedDomain && emailDomain === allowedDomain;
-        const isEmailAllowed = allowedEmails.includes(email);
+        const isEmailAllowed = !!importedUser;
 
         if (isDomainAllowed || isEmailAllowed) {
             return { allowed: true };
         }
-
+        console.log("isDomainAllowed", isDomainAllowed)
+        console.log("isEmailAllowed", isEmailAllowed)
         const errorMessage = allowedDomain
             ? `Sorry! You are not part of the organization. Please contact your administrator to get access.`
             : 'Sorry!! Your email is not in the allowed list.';

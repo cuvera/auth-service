@@ -16,7 +16,7 @@ interface UserImport {
 const CONFIG = {
     MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/auth-service',
     TENANT_ID: process.env.TENANT_ID || 'default',
-    INPUT_FILE: '../../../Downloads/cuvera-ingestion.employee1.json',
+    INPUT_FILE: '../../../Downloads/cuvera-ingestion.employee2.json',
     BATCH_SIZE: 100, // Number of users to process in a single batch
 };
 console.log("CONFIG", CONFIG)

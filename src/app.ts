@@ -35,7 +35,8 @@ const corsOptions = {
     'https://accounts.google.com/',
     'http://localhost:5173/',
     'https://demo.cuvera.ai',
-    'https://bull.cuvera.ai/'
+    'https://bull.cuvera.ai',
+    'https://bull.grogenie.ai'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

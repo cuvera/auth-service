@@ -279,7 +279,7 @@ async function findOrCreateUser(
 
     // Fetch employee details for new user
     const employeeDetails: any = await fetchEmployeeDetails(email);
-
+    console.log("employeeDetails", employeeDetails)
     // Create new user
     user = new User({
         googleId: profile.id,

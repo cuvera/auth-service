@@ -26,7 +26,7 @@ export class AuthService {
         const tokens = createTokens({
             id: user._id.toString(),
             email: user.email,
-            name: user.name, 
+            name: user.name,
             tenantId: user.tenantId,
             roles: user.roles,
             employeeId: user?.employeeId,
@@ -55,7 +55,7 @@ export class AuthService {
             roles: user.roles,
             employeeId: user?.employeeId,
             department: user?.department,
-            designation: user?.designation 
+            designation: user?.designation
         });
 
         return { user, tokens };
@@ -80,7 +80,7 @@ export class AuthService {
                 roles: user.roles,
                 employeeId: user?.employeeId,
                 department: user?.department,
-                designation: user?.designation 
+                designation: user?.designation
             });
 
             return tokens;

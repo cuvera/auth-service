@@ -103,16 +103,12 @@ export const refreshToken = catchAsync(async (req: Request, res: Response) => {
         res.status(200).json(response);
         await MessageService.sendAuthLogsMessage(data);
     } catch (error: any) {
-        res.status(500).json({
+        res.status(403).json({
             status: 'error',
-            message: 'Error refreshing token',
-            error: {
-                statusCode: 500,
-                status: 'error'
-            }
+            message: error.message || 'Error in refreshing token',
         });
         data.errorMessage = error.message;
-        data.errorCode = 500;
+        data.errorCode = 403;
         data.status = 'error';
         await MessageService.sendAuthLogsMessage(data);
     }

@@ -48,3 +48,7 @@ export interface IUpdateUserRequest {
     email?: string;
     password?: string;
 }
+
+export interface IBulkFetchUsersRequest {
+    emailIds: string[];
+}

@@ -4,6 +4,7 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as SamlStrategy } from 'passport-saml';
 import axios from 'axios';
 import User from '../models/User';
+import ImportedUser from '../models/ImportedUser';
 import { IJwtPayload } from '../interfaces';
 import fs from 'fs';
 import path from 'path';
@@ -17,7 +18,7 @@ import { MessageService } from '../services/message';
 async function fetchEmployeeDetails(email: string): Promise<string | null> {
     try {
         const response = await axios.get(
-            `${process.env.INTEGRATION_SERVICE_URL}/cuvera-ingestion-service/api/v1/employees/email/${email}`,
+            `${process.env.INGESTION_SERVICE_URL}/cuvera-ingestion-service/api/v1/employees/email/${email}`,
             {
                 headers: {
                     'Accept': 'application/json'
@@ -103,13 +104,13 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         },
         async (req: any, _accessToken: string, _refreshToken: string, profile: any, done: Function) => {
             console.log('Google OAuth callback received');
-            
+
             try {
                 const email = profile.emails?.[0]?.value;
                 if (!email) {
                     throw new Error('No email found in Google profile');
                 }
-                
+
                 // Get state data if available
                 let requestData: any = {};
                 if (req.query.state) {
@@ -120,9 +121,9 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                         console.error('Error parsing state data:', error);
                     }
                 }
-                
+
                 // Validate email access
-                const isAuthorized = validateEmailAccess(email);
+                const isAuthorized = await validateEmailAccess(email);
                 console.log("isAuthorized", isAuthorized);
                 if (!isAuthorized.allowed) {
                     await sendAuthLog({
@@ -141,10 +142,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                     });
                     return done(null, false, { message: isAuthorized.message });
                 }
-                
+
                 // Find or create user
                 const { user, isNewUser } = await findOrCreateUser(profile, email);
-                
+
                 // Log successful authentication
                 await sendAuthLog({
                     email: user.email,
@@ -160,12 +161,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                     httpMethod: req.method,
                     description: isNewUser ? 'New user registration via Google' : 'User login via Google'
                 });
-                
+
                 return done(null, user);
-                
+
             } catch (error) {
                 console.error('Google authentication error:', error);
-                
+
                 // Log the error
                 await sendAuthLog({
                     email: profile.emails?.[0]?.value || 'unknown',
@@ -181,12 +182,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                     endpoint: req.originalUrl,
                     httpMethod: req.method
                 });
-                
+
                 return done(error);
             }
         }
     );
-    
+
     // Register the strategy with Passport
     passport.use('google', googleStrategy);
 }
@@ -206,11 +207,12 @@ async function sendAuthLog(payload: any): Promise<void> {
             description: payload.description,
             changes: payload.changes,
             errorMessage: payload.errorMessage,
-            errorCode : payload.errorCode,
-            endpoint : payload.endpoint,
-            httpMethod : payload.httpMethod,
-            metadata : payload.metadata,
-            tenantId: payload.tenantId
+            errorCode: payload.errorCode,
+            endpoint: payload.endpoint,
+            httpMethod: payload.httpMethod,
+            metadata: payload.metadata,
+            tenantId: payload.tenantId,
+            serviceName: process.env.SERVICE_NAME || 'auth-service'
 
         }
 
@@ -223,38 +225,41 @@ async function sendAuthLog(payload: any): Promise<void> {
     }
 }
 
-function validateEmailAccess(email: string): { allowed: boolean; message?: string } {
+async function validateEmailAccess(email: string): Promise<{ allowed: boolean; message?: string }> {
     try {
         const allowedDomain = process.env.GOOGLE_DOMAIN_NAME;
-        const allowedEmails = process.env.ALLOWED_EMAILS 
-            ? process.env.ALLOWED_EMAILS.split(',').map(e => e.trim()) 
-            : [];
-        
+
+        const importedUser = await ImportedUser.findOne({
+            email: email.toLowerCase(),
+            tenantId: process.env.TENANT_ID || 'default'
+        });
+        console.log("importedUser", importedUser)
         const emailDomain = email.split('@')[1];
         const isDomainAllowed = allowedDomain && emailDomain === allowedDomain;
-        const isEmailAllowed = allowedEmails.includes(email);
+        const isEmailAllowed = !!importedUser;
 
         if (isDomainAllowed || isEmailAllowed) {
             return { allowed: true };
         }
-
-        const errorMessage = allowedDomain 
+        console.log("isDomainAllowed", isDomainAllowed)
+        console.log("isEmailAllowed", isEmailAllowed)
+        const errorMessage = allowedDomain
             ? `Sorry! You are not part of the organization. Please contact your administrator to get access.`
             : 'Sorry!! Your email is not in the allowed list.';
-        
+
         return { allowed: false, message: errorMessage };
     } catch (error) {
         console.error('Email validation error:', error);
-        return { 
-            allowed: false, 
-            message: 'Authentication service configuration error' 
+        return {
+            allowed: false,
+            message: 'Authentication service configuration error'
         };
     }
 }
 
 // Helper function: Find or create user
 async function findOrCreateUser(
-    profile: any, 
+    profile: any,
     email: string
 ): Promise<{ user: any; isNewUser: boolean }> {
     // Check if user exists with Google ID
@@ -274,7 +279,7 @@ async function findOrCreateUser(
 
     // Fetch employee details for new user
     const employeeDetails: any = await fetchEmployeeDetails(email);
-
+    console.log("employeeDetails", employeeDetails)
     // Create new user
     user = new User({
         googleId: profile.id,
@@ -363,7 +368,7 @@ if (process.env.SAML_ENTRY_POINT && process.env.SAML_ISSUER) {
                         }
 
                         // Check if user already exists with this SAML ID
-                        const existingUser = await User.findOne({ email});
+                        const existingUser = await User.findOne({ email });
                         if (existingUser) {
                             return done(null, existingUser);
                         }

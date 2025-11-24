@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import userService from '../services/userService';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
-import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse, IPaginatedResponse } from '../interfaces';
+import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse, IPaginatedResponse, IBulkFetchUsersRequest } from '../interfaces';
 import { log } from 'util';
 
 export const createUser = catchAsync(async (req: Request, res: Response) => {
@@ -232,4 +232,54 @@ export const removeUserRoles = catchAsync(async (req: Request, res: Response) =>
     }
     throw error;
   }
+});
+
+export const getUsersByEmailIds = catchAsync(async (req: Request, res: Response) => {
+  const { emailIds }: IBulkFetchUsersRequest = req.body;
+
+  if (!emailIds || !Array.isArray(emailIds)) {
+    throw new AppError('emailIds array is required', 400);
+  }
+
+  if (emailIds.length === 0) {
+    throw new AppError('emailIds array cannot be empty', 400);
+  }
+
+  if (emailIds.length > 100) {
+    throw new AppError('Cannot fetch more than 100 users at once', 400);
+  }
+
+  const nonStringEmails = emailIds.filter(email => typeof email !== 'string');
+  if (nonStringEmails.length > 0) {
+    throw new AppError('All email IDs must be strings', 400);
+  }
+
+  const invalidEmails = emailIds.filter(email => !email.includes('@'));
+  if (invalidEmails.length > 0) {
+    throw new AppError('All email IDs must be valid email addresses', 400);
+  }
+
+  const users = await userService.getUsersByEmailIds(emailIds);
+
+  const usersResponse: IUserWithRolesResponse[] = users.map(user => ({
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    roles: user.roles,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    employeeId: user.employeeId,
+  }));
+
+  const response: IApiResponse<{ users: IUserWithRolesResponse[]; requestedCount: number; foundCount: number }> = {
+    status: 'success',
+    results: users.length,
+    data: {
+      users: usersResponse,
+      requestedCount: emailIds.length,
+      foundCount: users.length,
+    },
+  };
+
+  res.status(200).json(response);
 });

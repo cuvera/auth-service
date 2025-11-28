@@ -7,6 +7,7 @@ import {
     removeUserRoles,
     getUserByEmployeeId,
     getDepartmentUserCounts,
+    getUsersByEmailIds,
 } from '../controllers/userController';
 import { protect, restrictTo } from '../middlewares/auth';
 
@@ -396,5 +397,67 @@ router.get('/employee/:employeeId', getUserByEmployeeId);
  *         description: Forbidden - Requires admin role
  */
 router.get('/departments/counts', getDepartmentUserCounts);
+
+/**
+ * @swagger
+ * /users/bulk-fetch:
+ *   post:
+ *     summary: Get multiple users by email IDs
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - emailIds
+ *             properties:
+ *               emailIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: email
+ *                 maxItems: 100
+ *                 minItems: 1
+ *                 description: Array of email addresses to fetch user details for
+ *                 example: ["user1@example.com", "user2@example.com"]
+ *     responses:
+ *       200:
+ *         description: Users fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 results:
+ *                   type: integer
+ *                   description: Number of users found
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/User'
+ *                     requestedCount:
+ *                       type: integer
+ *                       description: Number of email IDs requested
+ *                       example: 2
+ *                     foundCount:
+ *                       type: integer
+ *                       description: Number of users found
+ *                       example: 1
+ *       400:
+ *         description: Bad request (invalid emailIds array, too many emails, etc.)
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/bulk-fetch', getUsersByEmailIds);
 
 export default router;

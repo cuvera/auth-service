@@ -127,6 +127,14 @@ export class UserService {
 
     return departmentCounts;
   }
+
+  async getUsersByEmailIds(emailIds: string[]): Promise<IUser[]> {
+    if (!emailIds || emailIds.length === 0) {
+      return [];
+    }
+
+    return User.find({ email: { $in: emailIds } }).select('-password');
+  }
 }
 
 export default new UserService();

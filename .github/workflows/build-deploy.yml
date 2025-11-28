@@ -163,3 +163,5 @@ jobs:
           HEALTH_URL="https://${VM_HOST}/${SERVICE_NAME}/health"
           echo "Health check URL: $HEALTH_URL"
           curl -f "$HEALTH_URL" || exit 1
+
+          

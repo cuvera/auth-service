@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-  cuvera-auth-service:
-    image: ${DOCKER_REGISTRY_URL}/cuvera-auth-service:${IMAGE_TAG}
+  auth-service:
+    image: ${DOCKER_REGISTRY_URL}/auth-service:${IMAGE_TAG}
     container_name: ${SERVICE_NAME}
     ports:
       - "7003:7003"

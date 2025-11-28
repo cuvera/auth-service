@@ -14,7 +14,7 @@ COPY .npmrc ./
 COPY . .
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm i --verbose
+RUN npm i
 
 # Build the application
 RUN npm run build
@@ -35,7 +35,7 @@ COPY package*.json ./
 COPY .npmrc /app/.npmrc
 
 # Install dependencies
-RUN npm i && npm cache clean --force
+RUN npm i
 
 # Copy built application from builder stage
 COPY --from=builder --chown=cuvera:nodejs /app/dist ./dist

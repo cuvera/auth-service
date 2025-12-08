@@ -184,6 +184,7 @@ export const getMe = catchAsync(async (req: Request, res: Response) => {
 
 // Google OAuth Routes
 export const googleAuth = catchAsync(async (req: Request, res: Response, next: Function) => {
+    console.log("googleAuth", req.query)
     return passportAuthService.authenticateGoogle(req)(req, res, next);
 });
 

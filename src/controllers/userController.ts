@@ -57,6 +57,8 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     name: user.name,
     email: user.email,
     roles: user.roles,
+    department: user.department,
+    designation: user.designation,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     employeeId: user.employeeId,

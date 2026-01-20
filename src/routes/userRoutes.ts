@@ -170,7 +170,7 @@ router.post('/', createUser);
  *       400:
  *         description: Bad request (invalid pagination parameters)
  */
-router.get('/', protect, getAllUsers);
+router.get('/', getAllUsers);
 
 /**
  * @swagger

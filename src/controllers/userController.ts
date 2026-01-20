@@ -42,7 +42,7 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string);
   const limit = parseInt(req.query.limit as string);
   const search = req.query.search as string;
-  
+
   if (page < 1) {
     throw new AppError('Page must be greater than 0', 400);
   }

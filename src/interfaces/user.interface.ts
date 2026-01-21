@@ -41,6 +41,8 @@ export interface IUserWithRolesResponse {
     roles: string[];
     createdAt: Date;
     updatedAt?: Date;
+    department?: string;
+    designation?: string;
 }
 
 export interface IUpdateUserRequest {

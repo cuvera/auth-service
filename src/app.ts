@@ -12,6 +12,7 @@ import { globalErrorHandler } from './middlewares/errorHandler';
 import { setupSwagger } from './config/swagger';
 import { AppError } from './utils/appError';
 import { producer } from './messaging/producers/producer';
+import { extractUserPrincipal } from '@cuvera/commons'
 // Load environment variables
 dotenv.config();
 
@@ -61,6 +62,7 @@ app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+app.use(extractUserPrincipal());
 
 // Session configuration for OAuth
 app.use(session({

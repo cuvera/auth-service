@@ -1,0 +1,20 @@
+services:
+  auth-service:
+    image: ci-dev.cuvera.ai/auth-service:latest
+    container_name: ${SERVICE_NAME}
+    ports:
+      - "7003:7003"
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - cuvera-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  cuvera-network:
+    external: true

@@ -170,7 +170,7 @@ router.post('/', createUser);
  *       400:
  *         description: Bad request (invalid pagination parameters)
  */
-router.get('/', protect, getAllUsers);
+router.get('/', getAllUsers);
 
 /**
  * @swagger
@@ -260,7 +260,7 @@ router.get('/:id', protect, getUserById);
  *       404:
  *         description: User not found
  */
-router.patch('/:id/roles', protect, restrictTo('admin'), addUserRoles);
+router.put('/:id/roles', addUserRoles);
 
 /**
  * @swagger

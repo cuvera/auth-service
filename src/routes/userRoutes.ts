@@ -260,7 +260,7 @@ router.get('/:id', protect, getUserById);
  *       404:
  *         description: User not found
  */
-router.put('/:id/roles', protect, restrictTo('admin'), addUserRoles);
+router.put('/:id/roles', addUserRoles);
 
 /**
  * @swagger

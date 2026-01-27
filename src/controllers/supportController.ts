@@ -3,10 +3,23 @@ import supportService from '../services/supportService';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 
+const extractTenantId = (req: Request): string | undefined => {
+    return (
+        req.user?.tenantId ||
+        req.headers['x-tenant-id'] ||
+        req.headers['tenant-id'] ||
+        req.headers['tenet-id'] ||
+        req.headers['tenent-id'] ||
+        req.headers['tenantid'] ||
+        req.headers['X-Tenant-Id'] ||
+        req.headers['Tenant-Id']
+    ) as string | undefined;
+};
+
 export const whitelistUsers = catchAsync(async (req: Request, res: Response) => {
-    const tenantId = (req.headers['x-tenant-id'] || req.headers['tenant-id'] || req.headers['tenet-id'] || req.headers['tenent-id'] || (req.user as any)?.tenantId) as string;
+    const tenantId = extractTenantId(req);
     if (!tenantId) {
-        throw new AppError('Tenant ID is required in headers or bearer token', 400);
+        throw new AppError('Tenant ID is required', 400);
     }
 
     const { users } = req.body;
@@ -27,9 +40,9 @@ export const whitelistUsers = catchAsync(async (req: Request, res: Response) => 
 });
 
 export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response) => {
-    const tenantId = (req.headers['x-tenant-id'] || req.headers['tenant-id'] || req.headers['tenet-id'] || req.headers['tenent-id'] || (req.user as any)?.tenantId) as string;
+    const tenantId = extractTenantId(req);
     if (!tenantId) {
-        throw new AppError('Tenant ID is required in headers or bearer token', 400);
+        throw new AppError('Tenant ID is required', 400);
     }
 
     const page = parseInt(req.query.page as string) || 1;
@@ -56,10 +69,10 @@ export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response
 export const updateWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
     const { email: oldEmail } = req.params;
     const { email: newEmail } = req.body;
-    const tenantId = (req.headers['x-tenant-id'] || req.headers['tenant-id'] || req.headers['tenet-id'] || req.headers['tenent-id'] || (req.user as any)?.tenantId) as string;
+    const tenantId = extractTenantId(req);
 
     if (!tenantId) {
-        throw new AppError('Tenant ID is required in headers or bearer token', 400);
+        throw new AppError('Tenant ID is required', 400);
     }
     if (!newEmail) {
         throw new AppError('New email is required in request body', 400);
@@ -80,10 +93,10 @@ export const updateWhitelistedUser = catchAsync(async (req: Request, res: Respon
 
 export const deleteWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
     const { email } = req.params;
-    const tenantId = (req.headers['x-tenant-id'] || req.headers['tenant-id'] || req.headers['tenet-id'] || req.headers['tenent-id'] || (req.user as any)?.tenantId) as string;
+    const tenantId = extractTenantId(req);
 
     if (!tenantId) {
-        throw new AppError('Tenant ID is required in headers or bearer token', 400);
+        throw new AppError('Tenant ID is required', 400);
     }
 
     const deletedUser = await supportService.deleteWhitelistedUserByEmail(email, tenantId);

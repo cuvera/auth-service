@@ -67,9 +67,45 @@ const router = express.Router();
  *         required: true
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
  *     responses:
  *       200:
- *         description: List of whitelisted users
+ *         description: List of whitelisted users with pagination metadata
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 results:
+ *                   type: integer
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     whitelistedUsers:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/WhitelistedUser'
+ *                     totalCount:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
  *
  * /whitelisting/{email}:
  *   patch:
@@ -117,114 +153,9 @@ const router = express.Router();
  *       204:
  *         description: User removed from whitelist
  */
-router.post('/whitelisting', supportController.whitelistUsers);
-router.get('/whitelisting', supportController.getWhitelistedUsers);
-router.patch('/whitelisting/:email', supportController.updateWhitelistedUser);
-router.delete('/whitelisting/:email', supportController.deleteWhitelistedUser);
-
-/**
- * @swagger
- * /users:
- *   get:
- *     summary: Get all users (Search by email, name, employeeId, department, designation)
- *     tags: [Users]
- *     parameters:
- *       - in: header
- *         name: x-tenant-id
- *         required: true
- *         schema:
- *           type: string
- *       - in: query
- *         name: email
- *         schema:
- *           type: string
- *       - in: query
- *         name: name
- *         schema:
- *           type: string
- *       - in: query
- *         name: employeeId
- *         schema:
- *           type: string
- *       - in: query
- *         name: department
- *         schema:
- *           type: string
- *       - in: query
- *         name: designation
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: List of users
- *
- * /users/{id}:
- *   get:
- *     summary: Get user by ID
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *       - in: header
- *         name: x-tenant-id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: User details
- *   patch:
- *     summary: Update a user
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *       - in: header
- *         name: x-tenant-id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UserUpdate'
- *     responses:
- *       200:
- *         description: User updated
- */
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     UserUpdate:
- *       type: object
- *       properties:
- *         name:
- *           type: string
- *         email:
- *           type: string
- *         department:
- *           type: string
- *         employeeId:
- *           type: string
- *         designation:
- *           type: string
- *         roles:
- *           type: array
- *           items:
- *             type: string
- */
-router.get('/users', supportController.getUsers);
-router.get('/users/:id', supportController.getUserById);
-router.patch('/users/:id', supportController.updateUser);
+router.post('/', supportController.whitelistUsers);
+router.get('/', supportController.getWhitelistedUsers);
+router.patch('/:email', supportController.updateWhitelistedUser);
+router.delete('/:email', supportController.deleteWhitelistedUser);
 
 export default router;

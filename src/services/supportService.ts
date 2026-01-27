@@ -17,8 +17,18 @@ export class SupportService {
         return WhitelistedUser.find({ email: { $in: users.map(u => u.email.toLowerCase()) }, tenantId });
     }
 
-    async getAllWhitelistedUsers(tenantId: string): Promise<IWhitelistedUser[]> {
-        return WhitelistedUser.find({ tenantId });
+    async getAllWhitelistedUsers(tenantId: string, page: number = 1, limit: number = 10): Promise<{ users: IWhitelistedUser[]; totalCount: number; totalPages: number }> {
+        const skip = (page - 1) * limit;
+        const [users, totalCount] = await Promise.all([
+            WhitelistedUser.find({ tenantId }).skip(skip).limit(limit).sort({ createdAt: -1 }),
+            WhitelistedUser.countDocuments({ tenantId }),
+        ]);
+
+        return {
+            users,
+            totalCount,
+            totalPages: Math.ceil(totalCount / limit),
+        };
     }
 
     async updateWhitelistedUserEmail(oldEmail: string, newEmail: string, tenantId: string): Promise<IWhitelistedUser | null> {

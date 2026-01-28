@@ -28,6 +28,17 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
     })(req, res, next);
 };
 
+// Middleware to optional protect routes - populates req.user if valid JWT token is present
+export const optionalProtect = (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate('jwt', { session: false }, (err: any, user: IUser) => {
+        if (user) {
+            req.user = user;
+        }
+        next();
+    })(req, res, next);
+};
+
+
 // Alternative protect middleware using manual JWT verification
 export const protectManual = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -70,7 +81,7 @@ export const restrictTo = (...roles: string[]) => {
         }
 
         const hasRequiredRole = roles.some(role => req.user!.roles.includes(role));
-        
+
         if (!hasRequiredRole) {
             return next(new AppError('You do not have permission to perform this action.', 403));
         }

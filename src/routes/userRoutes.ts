@@ -11,7 +11,7 @@ import {
     updateUserInfo,
 } from '../controllers/userController';
 
-import { protect, restrictTo } from '../middlewares/auth';
+import { protect, restrictTo, optionalProtect } from '../middlewares/auth';
 
 const router = Router();
 
@@ -116,7 +116,7 @@ const router = Router();
  *       400:
  *         description: Bad request
  */
-router.post('/', protect, createUser);
+router.post('/', optionalProtect, createUser);
 
 
 /**
@@ -183,7 +183,7 @@ router.post('/', protect, createUser);
  *       400:
  *         description: Bad request (invalid pagination parameters)
  */
-router.get('/', protect, getAllUsers);
+router.get('/', optionalProtect, getAllUsers);
 
 
 /**

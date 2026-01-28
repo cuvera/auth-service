@@ -12,7 +12,8 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('Name, email, and password are required', 400);
   }
 
-  const user = await userService.createUser({ name, email, password });
+  const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
+  const user = await userService.createUser({ name, email, password, tenantId });
 
   const userResponse: IUserResponse = {
     id: user._id.toString(),
@@ -34,10 +35,11 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
-  const tenantId = req.user?.tenantId;
+  const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string);
   if (!tenantId) {
     throw new AppError('Tenant ID not found', 400);
   }
+
 
   const page = parseInt(req.query.page as string);
   const limit = parseInt(req.query.limit as string);

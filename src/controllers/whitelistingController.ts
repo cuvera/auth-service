@@ -4,7 +4,7 @@ import { AppError } from '../utils/appError';
 import ImportedUser from '../models/ImportedUser';
 
 export const createWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string;
+    const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
     if (!tenantId) {
         throw new AppError('Tenant ID not found', 400);
     }
@@ -42,7 +42,7 @@ export const createWhitelistedUser = catchAsync(async (req: Request, res: Respon
 
 
 export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response) => {
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string;
+    const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string);
     if (!tenantId) {
         throw new AppError('Tenant ID not found', 400);
     }
@@ -71,7 +71,7 @@ export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response
 
 export const updateWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
     const { email } = req.params;
-    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] as string;
+    const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
     if (!tenantId) {
         throw new AppError('Tenant ID not found', 400);
     }
@@ -101,10 +101,11 @@ export const updateWhitelistedUser = catchAsync(async (req: Request, res: Respon
 
 export const deleteWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
     const { email } = req.params;
-    const tenantId = req.headers['x-tenant-id'] as string;
+    const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string);
     if (!tenantId) {
-        throw new AppError('x-tenant-id header is required', 400);
+        throw new AppError('Tenant ID not found', 400);
     }
+
 
     const user = await ImportedUser.findOneAndDelete({ email, tenantId });
 

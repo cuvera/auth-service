@@ -23,6 +23,7 @@ export interface ICreateUserRequest {
     name: string;
     email: string;
     password: string;
+    tenantId?: string;
 }
 
 export interface IUserResponse {

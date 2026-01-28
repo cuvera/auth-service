@@ -3,12 +3,8 @@ import supportService from '../services/supportService';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 
-const extractTenantId = (req: Request): string | undefined => {
-    return req.user?.tenantId;
-};
-
 export const whitelistUsers = catchAsync(async (req: Request, res: Response) => {
-    const tenantId = extractTenantId(req);
+    const tenantId = req.user?.tenantId;
     if (!tenantId) {
         throw new AppError('Tenant ID is required', 400);
     }
@@ -31,7 +27,7 @@ export const whitelistUsers = catchAsync(async (req: Request, res: Response) => 
 });
 
 export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response) => {
-    const tenantId = extractTenantId(req);
+    const tenantId = req.user?.tenantId;
     if (!tenantId) {
         throw new AppError('Tenant ID is required', 400);
     }
@@ -60,7 +56,7 @@ export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response
 export const updateWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
     const { email: oldEmail } = req.params;
     const { email: newEmail } = req.body;
-    const tenantId = extractTenantId(req);
+    const tenantId = req.user?.tenantId;
 
     if (!tenantId) {
         throw new AppError('Tenant ID is required', 400);
@@ -84,7 +80,7 @@ export const updateWhitelistedUser = catchAsync(async (req: Request, res: Respon
 
 export const deleteWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
     const { email } = req.params;
-    const tenantId = extractTenantId(req);
+    const tenantId = req.user?.tenantId;
 
     if (!tenantId) {
         throw new AppError('Tenant ID is required', 400);

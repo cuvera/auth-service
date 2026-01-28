@@ -125,6 +125,8 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
     designation: user.designation,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    google: user.google,
+    
   };
 
   const response: IApiResponse<{ user: IUserResponse }> = {

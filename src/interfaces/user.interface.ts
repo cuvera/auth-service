@@ -43,6 +43,13 @@ export interface IUserResponse {
     avatar?: string;
     provider?: string;
     tenantId?: string;
+    google?: {
+        googleId?: string;
+        googleRefreshToken?: string;
+        googleScopes?: string[];
+        googleCalendarConnected?: boolean;
+        googleCalendarConnectedAt?: Date;
+    };
 }
 
 export interface IUserWithRolesResponse {

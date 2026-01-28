@@ -115,7 +115,7 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
   if (!user) {
     throw new AppError('User not found', 404);
   }
-
+  console.log("user?.google?.googleRefreshToken", user?.google?.googleRefreshToken)
   const userResponse: IUserResponse = {
     id: user._id.toString(),
     name: user.name,
@@ -125,10 +125,9 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
     designation: user.designation,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    google: user.google,
+    googleRefreshToken: user?.google?.googleRefreshToken,
     
   };
-
   const response: IApiResponse<{ user: IUserResponse }> = {
     status: 'success',
     data: {

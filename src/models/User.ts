@@ -64,7 +64,6 @@ const userSchema = new Schema<IUser>(
       },
       googleRefreshToken: {
         type: String,
-        select: false,
       },
       googleScopes: {
         type: [String],

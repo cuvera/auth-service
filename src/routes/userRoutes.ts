@@ -14,6 +14,9 @@ import { protect, restrictTo } from '../middlewares/auth';
 
 const router = Router();
 
+// Apply protect middleware to all routes
+router.use(protect);
+
 /**
  * @swagger
  * components:

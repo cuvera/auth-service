@@ -1,7 +1,11 @@
 import express from 'express';
 import * as supportController from '../controllers/supportController';
+import { protect } from '../middlewares/auth';
 
 const router = express.Router();
+
+// Apply protect middleware to all routes
+router.use(protect);
 
 /**
  * @swagger

@@ -5,30 +5,62 @@ export class SupportService {
     // --- Whitelisting Operations ---
 
     async whitelistUsers(users: { email: string }[], tenantId: string): Promise<IWhitelistedUser[]> {
+        console.log(`[SUPPORT_SERVICE] Whitelisting ${users.length} users for tenant: ${tenantId}`);
+
+        // Check for existing emails
+        const emailsToCheck = users.map(u => u.email.toLowerCase());
+        const existingUsers = await WhitelistedUser.find({
+            email: { $in: emailsToCheck },
+            tenantId
+        });
+
+        if (existingUsers.length > 0) {
+            const duplicateEmails = existingUsers.map(u => u.email).join(', ');
+            const errorMessage = existingUsers.length === 1
+                ? `Email already whitelisted: ${duplicateEmails}`
+                : `Emails already whitelisted: ${duplicateEmails}`;
+
+            console.error(`[SUPPORT_SERVICE] Duplicate emails found: ${duplicateEmails}`);
+            const AppError = require('../utils/appError').AppError;
+            throw new AppError(errorMessage, 400);
+        }
+
+        // Insert new users
         const operations = users.map(user => ({
-            updateOne: {
-                filter: { email: user.email.toLowerCase(), tenantId },
-                update: { $set: { email: user.email.toLowerCase(), tenantId } },
-                upsert: true,
+            insertOne: {
+                document: { email: user.email.toLowerCase(), tenantId }
             },
         }));
 
-        await WhitelistedUser.bulkWrite(operations);
-        return WhitelistedUser.find({ email: { $in: users.map(u => u.email.toLowerCase()) }, tenantId });
+        try {
+            await WhitelistedUser.bulkWrite(operations);
+            const results = await WhitelistedUser.find({ email: { $in: emailsToCheck }, tenantId });
+            console.log(`[SUPPORT_SERVICE] Successfully whitelisted ${results.length} users`);
+            return results;
+        } catch (error) {
+            console.error('[SUPPORT_SERVICE] Error during bulkWrite/find whitelisting:', error);
+            throw error;
+        }
     }
 
     async getAllWhitelistedUsers(tenantId: string, page: number = 1, limit: number = 10): Promise<{ users: IWhitelistedUser[]; totalCount: number; totalPages: number }> {
+        console.log(`[SUPPORT_SERVICE] Fetching whitelisted users for tenant: ${tenantId}, page: ${page}, limit: ${limit}`);
         const skip = (page - 1) * limit;
-        const [users, totalCount] = await Promise.all([
-            WhitelistedUser.find({ tenantId }).skip(skip).limit(limit).sort({ createdAt: -1 }),
-            WhitelistedUser.countDocuments({ tenantId }),
-        ]);
-
-        return {
-            users,
-            totalCount,
-            totalPages: Math.ceil(totalCount / limit),
-        };
+        try {
+            const [users, totalCount] = await Promise.all([
+                WhitelistedUser.find({ tenantId }).skip(skip).limit(limit).sort({ createdAt: -1 }),
+                WhitelistedUser.countDocuments({ tenantId }),
+            ]);
+            console.log(`[SUPPORT_SERVICE] Found ${users.length} users, total count: ${totalCount}`);
+            return {
+                users,
+                totalCount,
+                totalPages: Math.ceil(totalCount / limit),
+            };
+        } catch (error) {
+            console.error('[SUPPORT_SERVICE] Error fetching whitelisted users:', error);
+            throw error;
+        }
     }
 
     async updateWhitelistedUserEmail(oldEmail: string, newEmail: string, tenantId: string): Promise<IWhitelistedUser | null> {

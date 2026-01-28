@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import userService from '../services/userService';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
-import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse, IPaginatedResponse, IBulkFetchUsersRequest } from '../interfaces';
+import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse, IPaginatedResponse, IBulkFetchUsersRequest, IUpdateUserRequest } from '../interfaces';
 import { log } from 'util';
 
 export const createUser = catchAsync(async (req: Request, res: Response) => {
@@ -280,6 +280,48 @@ export const getUsersByEmailIds = catchAsync(async (req: Request, res: Response)
       users: usersResponse,
       requestedCount: emailIds.length,
       foundCount: users.length,
+    },
+  };
+
+  res.status(200).json(response);
+});
+
+export const updateUserInfo = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, department, designation, employeeId }: IUpdateUserRequest = req.body;
+
+  const updateData: any = {};
+  if (name !== undefined) updateData.name = name;
+  if (department !== undefined) updateData.department = department;
+  if (designation !== undefined) updateData.designation = designation;
+  if (employeeId !== undefined) updateData.employeeId = employeeId;
+
+  if (Object.keys(updateData).length === 0) {
+    throw new AppError('At least one field (name, department, designation, or employeeId) must be provided for update', 400);
+  }
+
+  const user = await userService.updateUser(id, updateData);
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  const userResponse: IUserWithRolesResponse = {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    roles: user.roles,
+    department: user.department,
+    designation: user.designation,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    employeeId: user.employeeId,
+  };
+
+  const response: IApiResponse<{ user: IUserWithRolesResponse }> = {
+    status: 'success',
+    data: {
+      user: userResponse,
     },
   };
 

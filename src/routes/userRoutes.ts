@@ -8,7 +8,9 @@ import {
     getUserByEmployeeId,
     getDepartmentUserCounts,
     getUsersByEmailIds,
+    updateUserInfo,
 } from '../controllers/userController';
+
 import { protect, restrictTo } from '../middlewares/auth';
 
 const router = Router();
@@ -44,12 +46,22 @@ const router = Router();
  *           type: string
  *           format: date-time
  *           description: The date the user was last updated
+ *         employeeId:
+ *           type: string
+ *         department:
+ *           type: string
+ *         designation:
+ *           type: string
  *       example:
  *         id: 60d0fe4f5311236168a109ca
  *         name: John Doe
  *         email: john@example.com
+ *         employeeId: "10597"
+ *         department: "SCM - Sub Contract"
+ *         designation: "General Manager"
  *         createdAt: 2023-01-01T00:00:00.000Z
  *         updatedAt: 2023-01-01T00:00:00.000Z
+
  */
 
 /**
@@ -104,7 +116,8 @@ const router = Router();
  *       400:
  *         description: Bad request
  */
-router.post('/', createUser);
+router.post('/', protect, createUser);
+
 
 /**
  * @swagger
@@ -170,7 +183,8 @@ router.post('/', createUser);
  *       400:
  *         description: Bad request (invalid pagination parameters)
  */
-router.get('/', getAllUsers);
+router.get('/', protect, getAllUsers);
+
 
 /**
  * @swagger
@@ -460,4 +474,48 @@ router.get('/departments/counts', getDepartmentUserCounts);
  */
 router.post('/bulk-fetch', getUsersByEmailIds);
 
+/**
+ * @swagger
+ * /users/{id}:
+ *   patch:
+ *     summary: Update user info
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               department:
+ *                 type: string
+ *               designation:
+ *                 type: string
+ *               employeeId:
+ *                 type: string
+ *             example:
+ *               name: Gulshan Banpela
+ *               department: SCM - Sub Contract
+ *               designation: General Manager
+ *               employeeId: "10597"
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *       404:
+ *         description: User not found
+ */
+router.patch('/:id', protect, updateUserInfo);
+
 export default router;
+

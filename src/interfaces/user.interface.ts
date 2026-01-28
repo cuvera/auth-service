@@ -43,12 +43,16 @@ export interface IUserWithRolesResponse {
     updatedAt?: Date;
     department?: string;
     designation?: string;
+    employeeId?: string;
 }
 
 export interface IUpdateUserRequest {
     name?: string;
     email?: string;
     password?: string;
+    department?: string;
+    designation?: string;
+    employeeId?: string;
 }
 
 export interface IBulkFetchUsersRequest {

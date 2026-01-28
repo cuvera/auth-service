@@ -229,6 +229,10 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
     });
 });
 
+export const googleCalendarAuth = catchAsync(async (req: Request, res: Response, next: Function) => {
+    return passportAuthService.authenticateGoogleCalendar(req)(req, res, next);
+});
+
 // SAML Routes
 export const samlAuth = catchAsync(async (req: Request, res: Response, next: Function) => {
     // Check if SAML is properly configured

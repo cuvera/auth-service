@@ -27,10 +27,6 @@ const userSchema = new Schema<IUser>(
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
-    googleId: {
-      type: String,
-      sparse: true,
-    },
     samlId: {
       type: String,
       sparse: true,
@@ -60,6 +56,27 @@ const userSchema = new Schema<IUser>(
     },
     designation: {
       type: String,
+    },
+    google: {
+      googleId: {
+        type: String,
+        sparse: true,
+      },
+      googleRefreshToken: {
+        type: String,
+        select: false,
+      },
+      googleScopes: {
+        type: [String],
+        default: [],
+      },
+      googleCalendarConnected: {
+        type: Boolean,
+        default: false,
+      },
+      googleCalendarConnectedAt: {
+        type: Date,
+      },
     },
   },
   {

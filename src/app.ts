@@ -123,7 +123,7 @@ const server = app.listen(PORT, async () => {
     await producer.initialize();
     console.log(` Server running on port ${PORT}`);
     console.log(` API Documentation available at http://localhost:${PORT}/api-docs`);
-    console.log(` Health check available at http://localhost:${PORT}/cuvera-core-service/health`);
+    console.log(` Health check available at http://localhost:${PORT}/auth-service/health`);
 
     // 🟢 Start cron scheduler (jobs run only if SCHEDULER_ENABLED=true)
   } catch (error) {

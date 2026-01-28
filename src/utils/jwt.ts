@@ -12,7 +12,7 @@ export const signToken = (payload: IJwtPayload): string => {
     return jwt.sign(
         payload as object,
         secret as jwt.Secret,
-        { expiresIn: '24h' }
+        { expiresIn: '03m' }
     );
 };
 

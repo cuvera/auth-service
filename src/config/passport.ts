@@ -102,15 +102,16 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             callbackURL: process.env.GOOGLE_CALLBACK_URL,
             passReqToCallback: true, // This allows us to access the request object
         },
-        async (req: any, _accessToken: string, _refreshToken: string, profile: any, done: Function) => {
-            console.log('Google OAuth callback received');
+        async (req: any, accessToken: string, refreshToken: string, profile: any, done: Function) => {
+            console.log('Google OAuth callback received', refreshToken);
 
             try {
                 const email = profile.emails?.[0]?.value;
                 if (!email) {
                     throw new Error('No email found in Google profile');
                 }
-
+                // const isCalendarFlow = req.query.calendar === 'true';  
+                const isCalendarFlow = true;                              
                 // Get state data if available
                 let requestData: any = {};
                 if (req.query.state) {
@@ -144,8 +145,14 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                 }
 
                 // Find or create user
-                const { user, isNewUser } = await findOrCreateUser(profile, email);
-
+                const { user, isNewUser } = await findOrCreateUser(profile, email, refreshToken, isCalendarFlow);
+                if (isNewUser) {
+                    await MessageService.sendUserData({
+                        userId: user._id,
+                        userEmail: user.email,
+                        google: user.google  
+                    });
+                }
                 // Log successful authentication
                 await sendAuthLog({
                     email: user.email,
@@ -260,42 +267,59 @@ async function validateEmailAccess(email: string): Promise<{ allowed: boolean; m
 // Helper function: Find or create user
 async function findOrCreateUser(
     profile: any,
-    email: string
+    email: string,
+    refreshToken?: string,
+    isCalendarFlow?: boolean
 ): Promise<{ user: any; isNewUser: boolean }> {
+    let user;
+    let isNewUser = false;
+
     // Check if user exists with Google ID
-    let user = await User.findOne({ googleId: profile.id });
-    if (user) {
-        return { user, isNewUser: false };
+    user = await User.findOne({ 'google.googleId': profile.id });
+    
+    if (!user) {
+        user = await User.findOne({ email });
+        if (user) {
+            user.google = user.google || {};
+            user.google.googleId = profile.id;
+        } else {
+            isNewUser = true;
+            
+            // Fetch employee details for new user
+            const employeeDetails: any = await fetchEmployeeDetails(email);
+            console.log("employeeDetails", employeeDetails);
+            
+            user = new User({
+                google: {
+                    googleId: profile.id
+                },
+                name: profile.displayName,
+                email,
+                avatar: profile.photos?.[0]?.value,
+                provider: 'google',
+                employeeId: employeeDetails?.data?.employeeId,
+                password: Math.random().toString(36).slice(-8),
+                tenantId: process.env.TENANT_ID || 'default',
+                department: employeeDetails?.data?.department,
+                designation: employeeDetails?.data?.designation
+            });
+        }
     }
 
-    // Check if user exists with email
-    user = await User.findOne({ email });
-    if (user) {
-        // Link Google account to existing user
-        user.googleId = profile.id;
-        await user.save();
-        return { user, isNewUser: false };
+    // Handle Calendar Flow updates (for existing or new users)
+    if (isCalendarFlow && refreshToken) {
+        user.google = user.google || {};
+        user.google.googleRefreshToken = refreshToken;
+        user.google.googleScopes = [
+            'https://www.googleapis.com/auth/calendar.readonly',
+            'https://www.googleapis.com/auth/calendar.events'
+        ];
+        user.google.googleCalendarConnected = true;
+        user.google.googleCalendarConnectedAt = new Date();
     }
-
-    // Fetch employee details for new user
-    const employeeDetails: any = await fetchEmployeeDetails(email);
-    console.log("employeeDetails", employeeDetails)
-    // Create new user
-    user = new User({
-        googleId: profile.id,
-        name: profile.displayName,
-        email,
-        avatar: profile.photos?.[0]?.value,
-        provider: 'google',
-        employeeId: employeeDetails?.data?.employeeId,
-        password: Math.random().toString(36).slice(-8),
-        tenantId: process.env.TENANT_ID || 'default',
-        department: employeeDetails?.data?.department,
-        designation: employeeDetails?.data?.designation
-    });
-
     await user.save();
-    return { user, isNewUser: true };
+
+    return { user, isNewUser };
 }
 
 // SAML Strategy

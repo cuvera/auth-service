@@ -5,7 +5,6 @@ export interface IUser extends Document {
     name: string;
     email: string;
     password: string;
-    googleId?: string;
     samlId?: string;
     avatar?: string;
     provider: 'local' | 'google' | 'saml';
@@ -17,6 +16,13 @@ export interface IUser extends Document {
     employeeId?: string;
     department?: string;
     designation?: string;
+    google?: {
+        googleId?: string;
+        googleRefreshToken?: string;
+        googleScopes?: string[];
+        googleCalendarConnected?: boolean;
+        googleCalendarConnectedAt?: Date;
+    };
 }
 
 export interface ICreateUserRequest {

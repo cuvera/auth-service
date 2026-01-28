@@ -13,18 +13,23 @@ export class PassportAuthService {
     }
     // Google OAuth authentication wrapper
     authenticateGoogle(req: Request) {
-        // Create a state object with the request data we need
         const stateData = {
             originalUrl: req.originalUrl,
             ip: req.ip,
             userAgent: req.headers['user-agent'],
-            // Add any other request data you need
             ...(req.query.state ? { originalState: req.query.state } : {})
         };
 
+        const scope = ['openid', 'profile', 'email', 'https://www.googleapis.com/auth/calendar.events'];
+        if (req.query.calendar === 'true') {
+            scope.push('https://www.googleapis.com/auth/calendar.readonly');
+        }
+        
         const options: any = {
-            scope: ['profile', 'email'],
-            // Encode the state as a URL-safe string
+            scope,
+            accessType: 'offline',
+            includeGrantedScopes: false,
+            prompt: 'consent',
             state: Buffer.from(JSON.stringify(stateData)).toString('base64')
         };
 
@@ -32,6 +37,32 @@ export class PassportAuthService {
             options.prompt = "select_account";
         }
         
+        return passport.authenticate('google', options);
+    }
+
+    //Calendar connect
+    authenticateGoogleCalendar(req: Request) {
+        const stateData = {
+            originalUrl: req.originalUrl,
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+        };
+
+        const options = {
+            scope: [
+                'openid',
+                'profile',
+                'email',
+                'https://www.googleapis.com/auth/calendar.readonly',
+                'https://www.googleapis.com/auth/calendar.events'
+            ],
+            accessType: 'offline',
+            prompt: 'consent',
+            includeGrantedScopes: false,
+            state: Buffer.from(JSON.stringify(stateData)).toString('base64'),
+        };
+        
+
         return passport.authenticate('google', options);
     }
 

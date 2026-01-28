@@ -5,7 +5,7 @@ export class SupportService {
     // --- Whitelisting Operations ---
 
     async whitelistUsers(users: { email: string }[], tenantId: string): Promise<IWhitelistedUser[]> {
-        console.log(`[SUPPORT_SERVICE] Whitelisting ${users.length} users for tenant: ${tenantId}`);
+
 
         // Check for existing emails
         const emailsToCheck = users.map(u => u.email.toLowerCase());
@@ -20,7 +20,7 @@ export class SupportService {
                 ? `Email already whitelisted: ${duplicateEmails}`
                 : `Emails already whitelisted: ${duplicateEmails}`;
 
-            console.error(`[SUPPORT_SERVICE] Duplicate emails found: ${duplicateEmails}`);
+
             const AppError = require('../utils/appError').AppError;
             throw new AppError(errorMessage, 400);
         }
@@ -35,7 +35,7 @@ export class SupportService {
         try {
             await WhitelistedUser.bulkWrite(operations);
             const results = await WhitelistedUser.find({ email: { $in: emailsToCheck }, tenantId });
-            console.log(`[SUPPORT_SERVICE] Successfully whitelisted ${results.length} users`);
+
             return results;
         } catch (error) {
             console.error('[SUPPORT_SERVICE] Error during bulkWrite/find whitelisting:', error);
@@ -44,14 +44,14 @@ export class SupportService {
     }
 
     async getAllWhitelistedUsers(tenantId: string, page: number = 1, limit: number = 10): Promise<{ users: IWhitelistedUser[]; totalCount: number; totalPages: number }> {
-        console.log(`[SUPPORT_SERVICE] Fetching whitelisted users for tenant: ${tenantId}, page: ${page}, limit: ${limit}`);
+
         const skip = (page - 1) * limit;
         try {
             const [users, totalCount] = await Promise.all([
                 WhitelistedUser.find({ tenantId }).skip(skip).limit(limit).sort({ createdAt: -1 }),
                 WhitelistedUser.countDocuments({ tenantId }),
             ]);
-            console.log(`[SUPPORT_SERVICE] Found ${users.length} users, total count: ${totalCount}`);
+
             return {
                 users,
                 totalCount,

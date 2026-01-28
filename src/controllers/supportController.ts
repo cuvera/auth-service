@@ -4,16 +4,7 @@ import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 
 const extractTenantId = (req: Request): string | undefined => {
-    return (
-        req.user?.tenantId ||
-        req.headers['x-tenant-id'] ||
-        req.headers['tenant-id'] ||
-        req.headers['tenet-id'] ||
-        req.headers['tenent-id'] ||
-        req.headers['tenantid'] ||
-        req.headers['X-Tenant-Id'] ||
-        req.headers['Tenant-Id']
-    ) as string | undefined;
+    return req.user?.tenantId;
 };
 
 export const whitelistUsers = catchAsync(async (req: Request, res: Response) => {

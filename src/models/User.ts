@@ -44,7 +44,7 @@ const userSchema = new Schema<IUser>(
       default: 'default',
       required: true,
     },
-    roles:  {
+    roles: {
       type: [String],
       default: ['user'],
     },

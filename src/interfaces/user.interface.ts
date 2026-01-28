@@ -38,6 +38,11 @@ export interface IUserResponse {
     createdAt: Date;
     updatedAt?: Date;
     employeeId?: string;
+    department?: string;
+    designation?: string;
+    avatar?: string;
+    provider?: string;
+    tenantId?: string;
 }
 
 export interface IUserWithRolesResponse {
@@ -49,12 +54,20 @@ export interface IUserWithRolesResponse {
     updatedAt?: Date;
     department?: string;
     designation?: string;
+    avatar?: string;
+    tenantId?: string;
+    employeeId?: string;
+    provider?: string;
 }
 
 export interface IUpdateUserRequest {
     name?: string;
     email?: string;
     password?: string;
+    roles?: string[];
+    employeeId?: string;
+    department?: string;
+    designation?: string;
 }
 
 export interface IBulkFetchUsersRequest {

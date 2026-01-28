@@ -8,6 +8,7 @@ import connectDB from './config/database';
 import passport from './config/passport';
 import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
+import whitelistingRoutes from './routes/whitelistingRoutes';
 import { globalErrorHandler } from './middlewares/errorHandler';
 import { setupSwagger } from './config/swagger';
 import { AppError } from './utils/appError';
@@ -106,6 +107,7 @@ baseRouter.get('/health', (req, res) => {
 
 baseRouter.use('/api/v1/auth', authRoutes);
 baseRouter.use('/api/v1/users', userRoutes);
+baseRouter.use('/api/v1/whitelisting', whitelistingRoutes);
 
 app.use('/auth-service', baseRouter);
 

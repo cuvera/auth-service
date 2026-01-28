@@ -8,14 +8,9 @@ import {
     getUserByEmployeeId,
     getDepartmentUserCounts,
     getUsersByEmailIds,
-    updateUserDetails,
 } from '../controllers/userController';
-import { protect, restrictTo } from '../middlewares/auth';
 
 const router = Router();
-
-// Apply protect middleware to all routes
-router.use(protect);
 
 /**
  * @swagger
@@ -48,50 +43,12 @@ router.use(protect);
  *           type: string
  *           format: date-time
  *           description: The date the user was last updated
- *         roles:
- *           type: array
- *           items:
- *             type: string
- *         employeeId:
- *           type: string
- *         department:
- *           type: string
- *         designation:
- *           type: string
  *       example:
  *         id: 60d0fe4f5311236168a109ca
- *         name: Gulshan Banpela
- *         email: gulshan@rootent.com
- *         roles: ["admin", "user"]
- *         employeeId: "10597"
- *         department: "SCM - Sub Contract"
- *         designation: "Manager"
- *         createdAt: 2025-08-14T10:19:06.668Z
- *         updatedAt: 2026-01-21T06:21:22.606Z
- *     UserUpdate:
- *       type: object
- *       properties:
- *         name:
- *           type: string
- *         email:
- *           type: string
- *         password:
- *           type: string
- *         roles:
- *           type: array
- *           items:
- *             type: string
- *         employeeId:
- *           type: string
- *         department:
- *           type: string
- *         designation:
- *           type: string
- *       example:
- *         name: Gulshan Banpela
- *         department: "SCM - Sub Contract"
- *         designation: "General Manager"
- *         employeeId: "10597"
+ *         name: John Doe
+ *         email: john@example.com
+ *         createdAt: 2023-01-01T00:00:00.000Z
+ *         updatedAt: 2023-01-01T00:00:00.000Z
  */
 
 /**
@@ -177,31 +134,6 @@ router.post('/', createUser);
  *         schema:
  *           type: string
  *         description: Search term to filter users by name or email (case-insensitive, partial match)
- *       - in: query
- *         name: email
- *         schema:
- *           type: string
- *         description: Filter by exact email
- *       - in: query
- *         name: name
- *         schema:
- *           type: string
- *         description: Filter by name (partial match)
- *       - in: query
- *         name: employeeId
- *         schema:
- *           type: string
- *         description: Filter by exact employee ID
- *       - in: query
- *         name: department
- *         schema:
- *           type: string
- *         description: Filter by department (partial match)
- *       - in: query
- *         name: designation
- *         schema:
- *           type: string
- *         description: Filter by designation (partial match)
  *     responses:
  *       200:
  *         description: Paginated list of users
@@ -272,7 +204,7 @@ router.get('/', getAllUsers);
  *       404:
  *         description: User not found
  */
-router.get('/:id', protect, getUserById);
+router.get('/:id', getUserById);
 
 /**
  * @swagger
@@ -526,46 +458,5 @@ router.get('/departments/counts', getDepartmentUserCounts);
  *         description: Unauthorized
  */
 router.post('/bulk-fetch', getUsersByEmailIds);
-
-/**
- * @swagger
- * /users/{id}:
- *   patch:
- *     summary: Update user details
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UserUpdate'
- *     responses:
- *       200:
- *         description: User updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/User'
- *       404:
- *         description: User not found
- */
-router.patch('/:id', updateUserDetails);
 
 export default router;

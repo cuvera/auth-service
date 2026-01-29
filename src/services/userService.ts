@@ -67,9 +67,15 @@ export class UserService {
   }
   async updateUser(
     id: string,
-    updateData: IUpdateUserRequest
+    updateData: IUpdateUserRequest,
+    tenantId?: string
   ): Promise<IUser | null> {
-    return User.findByIdAndUpdate(id, updateData, {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+
+    return User.findOneAndUpdate(query, updateData, {
       new: true,
       runValidators: true,
     }).select('-password');

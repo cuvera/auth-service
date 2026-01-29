@@ -1,11 +1,12 @@
-import express from 'express';
-import * as supportController from '../controllers/supportController';
-import { protect } from '../middlewares/auth';
+import { Router } from 'express';
+import {
+    createWhitelistedUser,
+    getWhitelistedUsers,
+    updateWhitelistedUser,
+    deleteWhitelistedUser
+} from '../controllers/whitelistingController';
 
-const router = express.Router();
-
-// Apply protect middleware to all routes
-router.use(protect);
+const router = Router();
 
 /**
  * @swagger
@@ -14,30 +15,32 @@ router.use(protect);
  *     WhitelistedUser:
  *       type: object
  *       properties:
- *         _id:
- *           type: string
  *         email:
  *           type: string
  *         tenantId:
  *           type: string
- *         createdAt:
+ *         importedAt:
  *           type: string
  *           format: date-time
- *         updatedAt:
- *           type: string
- *           format: date-time
+ * 
+ * tags:
+ *   name: Whitelisting
+ *   description: Whitelisting (Imported User) management API
  */
 
 /**
  * @swagger
  * /whitelisting:
  *   post:
- *     summary: Whitelist users (bulk or single)
+ *     summary: Add user to whitelist
  *     tags: [Whitelisting]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: header
  *         name: x-tenant-id
- *         required: true
+ *         required: false
+ *         description: Tenant ID (fallback if not in bearer token)
  *         schema:
  *           type: string
  *     requestBody:
@@ -59,16 +62,30 @@ router.use(protect);
  *                       properties:
  *                         email:
  *                           type: string
+ *             example:
+ *               users:
+ *                 - email: "user1@example.com"
+ *                 - email: "user2@example.com"
  *     responses:
  *       201:
  *         description: Users whitelisted successfully
+ */
+
+router.post('/', createWhitelistedUser);
+
+/**
+ * @swagger
+ * /whitelisting:
  *   get:
- *     summary: Get all whitelisted users for a tenant
+ *     summary: Get all whitelisted users
  *     tags: [Whitelisting]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: header
  *         name: x-tenant-id
- *         required: true
+ *         required: false
+ *         description: Tenant ID (fallback if not in bearer token)
  *         schema:
  *           type: string
  *       - in: query
@@ -76,45 +93,25 @@ router.use(protect);
  *         schema:
  *           type: integer
  *           default: 1
- *         description: Page number
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
  *           default: 10
- *         description: Number of items per page
  *     responses:
  *       200:
- *         description: List of whitelisted users with pagination metadata
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                 results:
- *                   type: integer
- *                 data:
- *                   type: object
- *                   properties:
- *                     whitelistedUsers:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/WhitelistedUser'
- *                     totalCount:
- *                       type: integer
- *                     page:
- *                       type: integer
- *                     limit:
- *                       type: integer
- *                     totalPages:
- *                       type: integer
- *
+ *         description: List of whitelisted users
+ */
+router.get('/', getWhitelistedUsers);
+
+/**
+ * @swagger
  * /whitelisting/{email}:
  *   patch:
- *     summary: Update a whitelisted user's email
+ *     summary: Update whitelisted user email
  *     tags: [Whitelisting]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: email
@@ -123,7 +120,8 @@ router.use(protect);
  *           type: string
  *       - in: header
  *         name: x-tenant-id
- *         required: true
+ *         required: false
+ *         description: Tenant ID (fallback if not in bearer token)
  *         schema:
  *           type: string
  *     requestBody:
@@ -135,13 +133,22 @@ router.use(protect);
  *             properties:
  *               email:
  *                 type: string
- *                 description: The new email address
+ *             example:
+ *               email: "updated@example.com"
  *     responses:
  *       200:
- *         description: Whitelisted user updated
+ *         description: User updated successfully
+ */
+router.patch('/:email', updateWhitelistedUser);
+
+/**
+ * @swagger
+ * /whitelisting/{email}:
  *   delete:
- *     summary: Remove a user from whitelist by email
+ *     summary: Remove user from whitelist
  *     tags: [Whitelisting]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: email
@@ -150,16 +157,17 @@ router.use(protect);
  *           type: string
  *       - in: header
  *         name: x-tenant-id
- *         required: true
+ *         required: false
+ *         description: Tenant ID (fallback if not in bearer token)
  *         schema:
  *           type: string
  *     responses:
  *       204:
  *         description: User removed from whitelist
  */
-router.post('/', supportController.whitelistUsers);
-router.get('/', supportController.getWhitelistedUsers);
-router.patch('/:email', supportController.updateWhitelistedUser);
-router.delete('/:email', supportController.deleteWhitelistedUser);
+router.delete('/:email', deleteWhitelistedUser);
+
+
+
 
 export default router;

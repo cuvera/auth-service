@@ -115,8 +115,6 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
   if (!user) {
     throw new AppError('User not found', 404);
   }
-  console.log("user?.google", user?.google)
-  console.log("user?.google?.googleRefreshToken", user?.google)
   const userResponse: IUserResponse = {
     id: user._id.toString(),
     name: user.name,

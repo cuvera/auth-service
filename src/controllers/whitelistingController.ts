@@ -13,14 +13,12 @@ export const createWhitelistedUser = catchAsync(async (req: Request, res: Respon
             const decoded = verifyToken(token);
             tenantId = decoded.tenantId;
         } catch (err) {
-            // Ignore invalid token
+            throw new AppError('Invalid or expired token', 401);
         }
     }
 
-    tenantId = tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
-
     if (!tenantId) {
-        throw new AppError('Tenant ID not found', 400);
+        throw new AppError('Tenant identification failed. Bearer token is required.', 401);
     }
 
     const { users } = req.body;
@@ -64,14 +62,12 @@ export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response
             const decoded = verifyToken(token);
             tenantId = decoded.tenantId;
         } catch (err) {
-            // Ignore invalid token
+            throw new AppError('Invalid or expired token', 401);
         }
     }
 
-    tenantId = tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
-
     if (!tenantId) {
-        throw new AppError('Tenant ID not found', 400);
+        throw new AppError('Tenant identification failed. Bearer token is required.', 401);
     }
 
     const page = parseInt(req.query.page as string) || 1;
@@ -106,14 +102,12 @@ export const updateWhitelistedUser = catchAsync(async (req: Request, res: Respon
             const decoded = verifyToken(token);
             tenantId = decoded.tenantId;
         } catch (err) {
-            // Ignore invalid token
+            throw new AppError('Invalid or expired token', 401);
         }
     }
 
-    tenantId = tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
-
     if (!tenantId) {
-        throw new AppError('Tenant ID not found', 400);
+        throw new AppError('Tenant identification failed. Bearer token is required.', 401);
     }
 
     const { email: newEmail } = req.body;
@@ -149,14 +143,12 @@ export const deleteWhitelistedUser = catchAsync(async (req: Request, res: Respon
             const decoded = verifyToken(token);
             tenantId = decoded.tenantId;
         } catch (err) {
-            // Ignore invalid token
+            throw new AppError('Invalid or expired token', 401);
         }
     }
 
-    tenantId = tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
-
     if (!tenantId) {
-        throw new AppError('Tenant ID not found', 400);
+        throw new AppError('Tenant identification failed. Bearer token is required.', 401);
     }
 
 

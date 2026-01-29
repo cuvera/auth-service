@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import userService from '../services/userService';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
+import { auditLogService } from '../services/auditLogService';
 import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse, IPaginatedResponse, IBulkFetchUsersRequest, IUpdateUserRequest } from '../interfaces';
 import { log } from 'util';
 
@@ -309,11 +310,41 @@ export const updateUserInfo = catchAsync(async (req: Request, res: Response) => 
     throw new AppError('At least one field (name, department, designation, or employeeId) must be provided for update', 400);
   }
 
+  // Get old user data for audit log
+  const oldUser = await userService.getUserById(id);
+  if (!oldUser) {
+    throw new AppError('User not found', 404);
+  }
+
   const user = await userService.updateUser(id, updateData, tenantId);
 
   if (!user) {
     throw new AppError('User not found', 404);
   }
+
+  // Send audit log for update
+  await auditLogService.sendAuditLog(
+    auditLogService.createMessage(tenantId, process.env.MESSAGING_TOP_AUDIT_LOGS || 'dev.integration.activity.logs.v1', {
+      userId: req.user?._id?.toString() || 'unknown',
+      action: 'UPDATE',
+      status: 'SUCCESS',
+      description: `Updated user profile: ${id}`,
+      changes: {
+        oldValue: {
+          name: oldUser.name,
+          department: oldUser.department,
+          designation: oldUser.designation,
+          employeeId: oldUser.employeeId
+        },
+        newValue: {
+          name: user.name,
+          department: user.department,
+          designation: user.designation,
+          employeeId: user.employeeId
+        }
+      }
+    })
+  );
 
   const userResponse: IUserWithRolesResponse = {
     id: user._id.toString(),

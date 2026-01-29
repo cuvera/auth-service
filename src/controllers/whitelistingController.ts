@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 import ImportedUser from '../models/ImportedUser';
+import { auditLogService } from '../services/auditLogService';
 
 export const createWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
     const tenantId = req.user?.tenantId;
@@ -28,6 +29,23 @@ export const createWhitelistedUser = catchAsync(async (req: Request, res: Respon
                 { email, tenantId },
                 { email, tenantId, importedAt: new Date() },
                 { upsert: true, new: true, setDefaultsOnInsert: true }
+            )
+        )
+    );
+
+    // Send audit logs for each whitelisted user
+    await Promise.all(
+        emails.map((email: string) =>
+            auditLogService.sendAuditLog(
+                auditLogService.createMessage(tenantId, process.env.MESSAGING_TOP_AUDIT_LOGS || 'dev.integration.activity.logs.v1', {
+                    userId: req.user?._id?.toString() || 'unknown',
+                    username: req.user?.name || 'unknown',
+                    userEmail: req.user?.email || 'unknown',
+                    action: 'CREATE',
+                    status: 'SUCCESS',
+                    description: `Whitelisted new user: ${email}`,
+                    metadata: { targetEmail: email }
+                })
             )
         )
     );
@@ -94,6 +112,23 @@ export const updateWhitelistedUser = catchAsync(async (req: Request, res: Respon
         throw new AppError('Whitelisted user not found', 404);
     }
 
+    // Send audit log for update
+    await auditLogService.sendAuditLog(
+        auditLogService.createMessage(tenantId, process.env.MESSAGING_TOP_AUDIT_LOGS || 'dev.integration.activity.logs.v1', {
+            userId: req.user?._id?.toString() || 'unknown',
+            username: req.user?.name || 'unknown',
+            userEmail: req.user?.email || 'unknown',
+            action: 'UPDATE',
+            status: 'SUCCESS',
+            description: `Updated whitelist entry for: ${email}`,
+            changes: {
+                oldValue: { email },
+                newValue: { email: newEmail }
+            },
+            metadata: { targetEmail: newEmail }
+        })
+    );
+
     res.status(200).json({
         status: 'success',
         data: {
@@ -116,6 +151,19 @@ export const deleteWhitelistedUser = catchAsync(async (req: Request, res: Respon
     if (!user) {
         throw new AppError('Whitelisted user not found', 404);
     }
+
+    // Send audit log for deletion
+    await auditLogService.sendAuditLog(
+        auditLogService.createMessage(tenantId, process.env.MESSAGING_TOP_AUDIT_LOGS || 'dev.integration.activity.logs.v1', {
+            userId: req.user?._id?.toString() || 'unknown',
+            username: req.user?.name || 'unknown',
+            userEmail: req.user?.email || 'unknown',
+            action: 'DELETE',
+            status: 'SUCCESS',
+            description: `Removed ${email} from whitelist`,
+            metadata: { targetEmail: email }
+        })
+    );
 
     res.status(204).json({
         status: 'success',

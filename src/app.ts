@@ -9,7 +9,6 @@ import passport from './config/passport';
 import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
 import whitelistingRoutes from './routes/whitelistingRoutes';
-
 import { globalErrorHandler } from './middlewares/errorHandler';
 import { setupSwagger } from './config/swagger';
 import { AppError } from './utils/appError';
@@ -110,7 +109,6 @@ baseRouter.use('/api/v1/auth', authRoutes);
 baseRouter.use('/api/v1/users', userRoutes);
 baseRouter.use('/api/v1/whitelisting', whitelistingRoutes);
 
-
 app.use('/auth-service', baseRouter);
 
 // Handle undefined routes
@@ -127,7 +125,7 @@ const server = app.listen(PORT, async () => {
     await producer.initialize();
     console.log(` Server running on port ${PORT}`);
     console.log(` API Documentation available at http://localhost:${PORT}/api-docs`);
-    console.log(` Health check available at http://localhost:${PORT}/cuvera-core-service/health`);
+    console.log(` Health check available at http://localhost:${PORT}/auth-service/health`);
 
     // 🟢 Start cron scheduler (jobs run only if SCHEDULER_ENABLED=true)
   } catch (error) {

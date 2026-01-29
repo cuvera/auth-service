@@ -6,6 +6,19 @@ import { auditLogService } from '../services/auditLogService';
 import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse, IPaginatedResponse, IBulkFetchUsersRequest, IUpdateUserRequest } from '../interfaces';
 import { log } from 'util';
 
+const extractTenantId = (req: Request): string | undefined => {
+  return (
+    req.user?.tenantId ||
+    req.headers['x-tenant-id'] ||
+    req.headers['tenant-id'] ||
+    req.headers['tenet-id'] ||
+    req.headers['tenent-id'] ||
+    req.headers['tenantid'] ||
+    req.headers['X-Tenant-Id'] ||
+    req.headers['Tenant-Id']
+  ) as string | undefined;
+};
+
 export const createUser = catchAsync(async (req: Request, res: Response) => {
   const { name, email, password }: ICreateUserRequest = req.body;
 
@@ -42,10 +55,19 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('Tenant ID not found', 400);
   }
 
-
-  const page = parseInt(req.query.page as string);
-  const limit = parseInt(req.query.limit as string);
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
   const search = req.query.search as string;
+
+  // Additional filters
+  const { email, employeeId, name, department, designation } = req.query;
+  const filters = {
+    email: email as string,
+    employeeId: employeeId as string,
+    name: name as string,
+    department: department as string,
+    designation: designation as string
+  };
 
   if (page < 1) {
     throw new AppError('Page must be greater than 0', 400);
@@ -54,7 +76,7 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('Limit must be between 1 and 100', 400);
   }
 
-  const result = await userService.getAllUsers(tenantId, page, limit, search);
+  const result = await userService.getAllUsers(tenantId, page, limit, search, filters);
 
   const usersResponse: IUserWithRolesResponse[] = result.users.map(user => ({
     id: user._id.toString(),
@@ -63,12 +85,18 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     roles: user.roles,
     department: user.department,
     designation: user.designation,
+    employeeId: user.employeeId,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    employeeId: user.employeeId,
   }));
 
-  const response: IApiResponse<{ users: IUserWithRolesResponse[]; totalCount: number; page: number; limit: number; totalPages: number }> = {
+  const response: IApiResponse<{
+    users: IUserWithRolesResponse[];
+    totalCount: number;
+    page: number;
+    limit: number;
+    totalPages: number
+  }> = {
     status: 'success',
     results: result.users.length,
     data: {
@@ -90,16 +118,20 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
   if (!user) {
     throw new AppError('User not found', 404);
   }
-
+  console.log("user?.google", user?.google)
+  console.log("user?.google?.googleRefreshToken", user?.google)
   const userResponse: IUserResponse = {
     id: user._id.toString(),
     name: user.name,
     email: user.email,
+    employeeId: user.employeeId,
+    department: user.department,
+    designation: user.designation,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    employeeId: user.employeeId,
-  };
+    googleRefreshToken: user?.google?.googleRefreshToken,
 
+  };
   const response: IApiResponse<{ user: IUserResponse }> = {
     status: 'success',
     data: {
@@ -122,9 +154,11 @@ export const getUserByEmployeeId = catchAsync(async (req: Request, res: Response
     id: user._id.toString(),
     name: user.name,
     email: user.email,
+    employeeId: user.employeeId,
+    department: user.department,
+    designation: user.designation,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    employeeId: user.employeeId,
   };
 
   const response: IApiResponse<{ user: IUserResponse }> = {
@@ -161,6 +195,9 @@ export const addUserRoles = catchAsync(async (req: Request, res: Response) => {
     name: user.name,
     email: user.email,
     roles: user.roles,
+    employeeId: user.employeeId,
+    department: user.department,
+    designation: user.designation,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -220,6 +257,9 @@ export const removeUserRoles = catchAsync(async (req: Request, res: Response) =>
       name: user.name,
       email: user.email,
       roles: user.roles,
+      employeeId: user.employeeId,
+      department: user.department,
+      designation: user.designation,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -272,9 +312,11 @@ export const getUsersByEmailIds = catchAsync(async (req: Request, res: Response)
     name: user.name,
     email: user.email,
     roles: user.roles,
+    employeeId: user.employeeId,
+    department: user.department,
+    designation: user.designation,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    employeeId: user.employeeId,
   }));
 
   const response: IApiResponse<{ users: IUserWithRolesResponse[]; requestedCount: number; foundCount: number }> = {

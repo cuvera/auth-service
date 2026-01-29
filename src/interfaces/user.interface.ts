@@ -5,7 +5,6 @@ export interface IUser extends Document {
     name: string;
     email: string;
     password: string;
-    googleId?: string;
     samlId?: string;
     avatar?: string;
     provider: 'local' | 'google' | 'saml';
@@ -17,6 +16,13 @@ export interface IUser extends Document {
     employeeId?: string;
     department?: string;
     designation?: string;
+    google?: {
+        googleId?: string;
+        googleRefreshToken?: string;
+        googleScopes?: string[];
+        googleCalendarConnected?: boolean;
+        googleCalendarConnectedAt?: Date;
+    };
 }
 
 export interface ICreateUserRequest {
@@ -33,6 +39,12 @@ export interface IUserResponse {
     createdAt: Date;
     updatedAt?: Date;
     employeeId?: string;
+    department?: string;
+    designation?: string;
+    avatar?: string;
+    provider?: string;
+    tenantId?: string;
+    googleRefreshToken?: string;
 }
 
 export interface IUserWithRolesResponse {
@@ -45,15 +57,19 @@ export interface IUserWithRolesResponse {
     department?: string;
     designation?: string;
     employeeId?: string;
+    avatar?: string;
+    tenantId?: string;
+    provider?: string;
 }
 
 export interface IUpdateUserRequest {
     name?: string;
     email?: string;
     password?: string;
+    roles?: string[];
+    employeeId?: string;
     department?: string;
     designation?: string;
-    employeeId?: string;
 }
 
 export interface IBulkFetchUsersRequest {

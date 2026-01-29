@@ -22,5 +22,22 @@ export class MessageService {
                 return false;
             }
     }
+
+    static async sendUserData(payload: any): Promise<boolean> {
+        try {
+            const topic = {
+                eventType: topics.userData,
+            };
+            const message = generateKafkaMessage(payload, {
+                tenantId: payload?.tenantId,
+                eventType: topic?.eventType,
+            });
+            await producer.sendMessage(topics.userData, message);
+            return true;
+            }catch (error) {
+                logger.error(`Warning: Failed to send message to RabbitMQ: ${error}`);
+                return false;
+            }
+    }
 }
 

@@ -282,6 +282,18 @@ router.get('/google/callback', googleCallback);
 
 /**
  * @swagger
+ * /auth/google/calendar:
+ *   get:
+ *     summary: Google Calendar OAuth callback
+ *     tags: [Authentication]
+ *     responses:
+ *       302:
+ *         description: Redirect to frontend with authentication result
+ */
+router.get('/google/calendar', googleCallback);
+
+/**
+ * @swagger
  * /auth/saml:
  *   get:
  *     summary: Initiate SAML authentication

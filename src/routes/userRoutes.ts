@@ -219,12 +219,12 @@ router.get('/', getAllUsers);
  *       404:
  *         description: User not found
  */
-router.get('/:id', protect, getUserById);
+router.get('/:id', getUserById);
 
 /**
  * @swagger
  * /users/{id}/roles:
- *   patch:
+ *   put:
  *     summary: Add roles to user
  *     tags: [Users]
  *     security:
@@ -329,7 +329,7 @@ router.put('/:id/roles', addUserRoles);
  *       404:
  *         description: User not found
  */
-router.delete('/:id/roles', protect, restrictTo('admin'), removeUserRoles);
+router.delete('/:id/roles', removeUserRoles);
 
 /**
  * @swagger

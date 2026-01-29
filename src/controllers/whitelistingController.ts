@@ -2,20 +2,9 @@ import { Request, Response } from 'express';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 import ImportedUser from '../models/ImportedUser';
-import { verifyToken } from '../utils/jwt';
 
 export const createWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
-    let tenantId = req.user?.tenantId;
-
-    if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
-        try {
-            const token = req.headers.authorization.split(' ')[1];
-            const decoded = verifyToken(token);
-            tenantId = decoded.tenantId;
-        } catch (err) {
-            throw new AppError('Invalid or expired token', 401);
-        }
-    }
+    const tenantId = req.user?.tenantId;
 
     if (!tenantId) {
         throw new AppError('Tenant identification failed. Bearer token is required.', 401);
@@ -54,17 +43,7 @@ export const createWhitelistedUser = catchAsync(async (req: Request, res: Respon
 
 
 export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response) => {
-    let tenantId = req.user?.tenantId;
-
-    if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
-        try {
-            const token = req.headers.authorization.split(' ')[1];
-            const decoded = verifyToken(token);
-            tenantId = decoded.tenantId;
-        } catch (err) {
-            throw new AppError('Invalid or expired token', 401);
-        }
-    }
+    const tenantId = req.user?.tenantId;
 
     if (!tenantId) {
         throw new AppError('Tenant identification failed. Bearer token is required.', 401);
@@ -94,17 +73,7 @@ export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response
 
 export const updateWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
     const { email } = req.params;
-    let tenantId = req.user?.tenantId;
-
-    if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
-        try {
-            const token = req.headers.authorization.split(' ')[1];
-            const decoded = verifyToken(token);
-            tenantId = decoded.tenantId;
-        } catch (err) {
-            throw new AppError('Invalid or expired token', 401);
-        }
-    }
+    const tenantId = req.user?.tenantId;
 
     if (!tenantId) {
         throw new AppError('Tenant identification failed. Bearer token is required.', 401);
@@ -135,17 +104,7 @@ export const updateWhitelistedUser = catchAsync(async (req: Request, res: Respon
 
 export const deleteWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
     const { email } = req.params;
-    let tenantId = req.user?.tenantId;
-
-    if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
-        try {
-            const token = req.headers.authorization.split(' ')[1];
-            const decoded = verifyToken(token);
-            tenantId = decoded.tenantId;
-        } catch (err) {
-            throw new AppError('Invalid or expired token', 401);
-        }
-    }
+    const tenantId = req.user?.tenantId;
 
     if (!tenantId) {
         throw new AppError('Tenant identification failed. Bearer token is required.', 401);

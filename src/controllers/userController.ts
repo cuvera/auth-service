@@ -3,7 +3,6 @@ import userService from '../services/userService';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse, IPaginatedResponse, IBulkFetchUsersRequest, IUpdateUserRequest } from '../interfaces';
-import { verifyToken } from '../utils/jwt';
 import { log } from 'util';
 
 export const createUser = catchAsync(async (req: Request, res: Response) => {
@@ -36,19 +35,7 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
-  let tenantId = req.user?.tenantId;
-
-  if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
-    try {
-      const token = req.headers.authorization.split(' ')[1];
-      const decoded = verifyToken(token);
-      tenantId = decoded.tenantId;
-    } catch (err) {
-      // Ignore invalid token for optional auth
-    }
-  }
-
-  tenantId = tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
+  const tenantId = req.user?.tenantId;
 
   if (!tenantId) {
     throw new AppError('Tenant ID not found', 400);
@@ -306,17 +293,7 @@ export const updateUserInfo = catchAsync(async (req: Request, res: Response) => 
   const { id } = req.params;
   const { name, department, designation, employeeId }: IUpdateUserRequest = req.body;
 
-  let tenantId = req.user?.tenantId;
-
-  if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
-    try {
-      const token = req.headers.authorization.split(' ')[1];
-      const decoded = verifyToken(token);
-      tenantId = decoded.tenantId;
-    } catch (err) {
-      throw new AppError('Invalid or expired token', 401);
-    }
-  }
+  const tenantId = req.user?.tenantId;
 
   if (!tenantId) {
     throw new AppError('Tenant identification failed. Bearer token is required.', 401);

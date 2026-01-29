@@ -29,6 +29,7 @@ export interface ICreateUserRequest {
     name: string;
     email: string;
     password: string;
+    tenantId?: string;
 }
 
 export interface IUserResponse {
@@ -55,9 +56,9 @@ export interface IUserWithRolesResponse {
     updatedAt?: Date;
     department?: string;
     designation?: string;
+    employeeId?: string;
     avatar?: string;
     tenantId?: string;
-    employeeId?: string;
     provider?: string;
 }
 

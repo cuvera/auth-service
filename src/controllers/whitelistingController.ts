@@ -2,9 +2,23 @@ import { Request, Response } from 'express';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 import ImportedUser from '../models/ImportedUser';
+import { verifyToken } from '../utils/jwt';
 
 export const createWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
-    const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
+    let tenantId = req.user?.tenantId;
+
+    if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
+        try {
+            const token = req.headers.authorization.split(' ')[1];
+            const decoded = verifyToken(token);
+            tenantId = decoded.tenantId;
+        } catch (err) {
+            // Ignore invalid token
+        }
+    }
+
+    tenantId = tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
+
     if (!tenantId) {
         throw new AppError('Tenant ID not found', 400);
     }
@@ -42,7 +56,20 @@ export const createWhitelistedUser = catchAsync(async (req: Request, res: Respon
 
 
 export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response) => {
-    const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string);
+    let tenantId = req.user?.tenantId;
+
+    if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
+        try {
+            const token = req.headers.authorization.split(' ')[1];
+            const decoded = verifyToken(token);
+            tenantId = decoded.tenantId;
+        } catch (err) {
+            // Ignore invalid token
+        }
+    }
+
+    tenantId = tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
+
     if (!tenantId) {
         throw new AppError('Tenant ID not found', 400);
     }
@@ -71,7 +98,20 @@ export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response
 
 export const updateWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
     const { email } = req.params;
-    const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
+    let tenantId = req.user?.tenantId;
+
+    if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
+        try {
+            const token = req.headers.authorization.split(' ')[1];
+            const decoded = verifyToken(token);
+            tenantId = decoded.tenantId;
+        } catch (err) {
+            // Ignore invalid token
+        }
+    }
+
+    tenantId = tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
+
     if (!tenantId) {
         throw new AppError('Tenant ID not found', 400);
     }
@@ -101,7 +141,20 @@ export const updateWhitelistedUser = catchAsync(async (req: Request, res: Respon
 
 export const deleteWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
     const { email } = req.params;
-    const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string);
+    let tenantId = req.user?.tenantId;
+
+    if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
+        try {
+            const token = req.headers.authorization.split(' ')[1];
+            const decoded = verifyToken(token);
+            tenantId = decoded.tenantId;
+        } catch (err) {
+            // Ignore invalid token
+        }
+    }
+
+    tenantId = tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
+
     if (!tenantId) {
         throw new AppError('Tenant ID not found', 400);
     }

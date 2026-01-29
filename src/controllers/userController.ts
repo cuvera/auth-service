@@ -3,6 +3,7 @@ import userService from '../services/userService';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse, IPaginatedResponse, IBulkFetchUsersRequest, IUpdateUserRequest } from '../interfaces';
+import { verifyToken } from '../utils/jwt';
 import { log } from 'util';
 
 export const createUser = catchAsync(async (req: Request, res: Response) => {
@@ -12,7 +13,7 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('Name, email, and password are required', 400);
   }
 
-  const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
+  const tenantId = req.user!.tenantId;
   const user = await userService.createUser({ name, email, password, tenantId });
 
   const userResponse: IUserResponse = {
@@ -35,7 +36,20 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
-  const tenantId = req.user?.tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string);
+  let tenantId = req.user?.tenantId;
+
+  if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const decoded = verifyToken(token);
+      tenantId = decoded.tenantId;
+    } catch (err) {
+      // Ignore invalid token for optional auth
+    }
+  }
+
+  tenantId = tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
+
   if (!tenantId) {
     throw new AppError('Tenant ID not found', 400);
   }
@@ -292,6 +306,24 @@ export const updateUserInfo = catchAsync(async (req: Request, res: Response) => 
   const { id } = req.params;
   const { name, department, designation, employeeId }: IUpdateUserRequest = req.body;
 
+  let tenantId = req.user?.tenantId;
+
+  if (!tenantId && req.headers.authorization?.startsWith('Bearer ')) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const decoded = verifyToken(token);
+      tenantId = decoded.tenantId;
+    } catch (err) {
+      // Ignore invalid token
+    }
+  }
+
+  tenantId = tenantId || (req.headers['x-tenant-id'] as string) || (req.query.tenantId as string) || (req.body.tenantId as string);
+
+  if (!tenantId) {
+    throw new AppError('Tenant ID not found', 400);
+  }
+
   const updateData: any = {};
   if (name !== undefined) updateData.name = name;
   if (department !== undefined) updateData.department = department;
@@ -302,7 +334,7 @@ export const updateUserInfo = catchAsync(async (req: Request, res: Response) => 
     throw new AppError('At least one field (name, department, designation, or employeeId) must be provided for update', 400);
   }
 
-  const user = await userService.updateUser(id, updateData);
+  const user = await userService.updateUser(id, updateData, tenantId);
 
   if (!user) {
     throw new AppError('User not found', 404);

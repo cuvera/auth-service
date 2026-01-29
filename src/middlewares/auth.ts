@@ -28,15 +28,6 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
     })(req, res, next);
 };
 
-// Middleware to optional protect routes - populates req.user if valid JWT token is present
-export const optionalProtect = (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate('jwt', { session: false }, (err: any, user: IUser) => {
-        if (user) {
-            req.user = user;
-        }
-        next();
-    })(req, res, next);
-};
 
 
 // Alternative protect middleware using manual JWT verification

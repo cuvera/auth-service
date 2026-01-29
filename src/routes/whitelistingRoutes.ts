@@ -5,7 +5,6 @@ import {
     updateWhitelistedUser,
     deleteWhitelistedUser
 } from '../controllers/whitelistingController';
-import { optionalProtect } from '../middlewares/auth';
 
 const router = Router();
 
@@ -72,7 +71,7 @@ const router = Router();
  *         description: Users whitelisted successfully
  */
 
-router.post('/', optionalProtect, createWhitelistedUser);
+router.post('/', createWhitelistedUser);
 
 /**
  * @swagger
@@ -103,7 +102,7 @@ router.post('/', optionalProtect, createWhitelistedUser);
  *       200:
  *         description: List of whitelisted users
  */
-router.get('/', optionalProtect, getWhitelistedUsers);
+router.get('/', getWhitelistedUsers);
 
 /**
  * @swagger
@@ -140,7 +139,7 @@ router.get('/', optionalProtect, getWhitelistedUsers);
  *       200:
  *         description: User updated successfully
  */
-router.patch('/:email', optionalProtect, updateWhitelistedUser);
+router.patch('/:email', updateWhitelistedUser);
 
 /**
  * @swagger
@@ -166,7 +165,7 @@ router.patch('/:email', optionalProtect, updateWhitelistedUser);
  *       204:
  *         description: User removed from whitelist
  */
-router.delete('/:email', optionalProtect, deleteWhitelistedUser);
+router.delete('/:email', deleteWhitelistedUser);
 
 
 

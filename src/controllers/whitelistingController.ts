@@ -23,14 +23,29 @@ export const createWhitelistedUser = catchAsync(async (req: Request, res: Respon
         throw new AppError('At least one valid email is required', 400);
     }
 
-    const whitelistedUsers = await Promise.all(
-        emails.map((email: string) =>
-            ImportedUser.findOneAndUpdate(
-                { email, tenantId },
-                { email, tenantId, importedAt: new Date() },
-                { upsert: true, new: true, setDefaultsOnInsert: true }
-            )
-        )
+    // Check for existing emails in the whitelist
+    const existingUsers = await ImportedUser.find({
+        email: { $in: emails },
+        tenantId
+    });
+
+    if (existingUsers.length > 0) {
+        const duplicateEmails = existingUsers.map(user => user.email);
+        const duplicateList = duplicateEmails.join(', ');
+
+        throw new AppError(
+            `The following email(s) are already whitelisted: ${duplicateList}`,
+            400
+        );
+    }
+
+    // Create new whitelisted users
+    const whitelistedUsers = await ImportedUser.insertMany(
+        emails.map((email: string) => ({
+            email,
+            tenantId,
+            importedAt: new Date()
+        }))
     );
 
     // Send audit logs for each whitelisted user

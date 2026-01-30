@@ -105,7 +105,7 @@ export const getWhitelistedUsers = catchAsync(async (req: Request, res: Response
 });
 
 export const updateWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
-    const { email } = req.params;
+    const { id } = req.params;
     const tenantId = req.user?.tenantId;
 
     if (!tenantId) {
@@ -118,7 +118,7 @@ export const updateWhitelistedUser = catchAsync(async (req: Request, res: Respon
     }
 
     const user = await ImportedUser.findOneAndUpdate(
-        { email, tenantId },
+        { _id: id, tenantId },
         { email: newEmail },
         { new: true, runValidators: true }
     );
@@ -135,12 +135,12 @@ export const updateWhitelistedUser = catchAsync(async (req: Request, res: Respon
             userEmail: req.user?.email || 'unknown',
             action: 'UPDATE',
             status: 'SUCCESS',
-            description: `Updated whitelist entry for: ${email}`,
+            description: `Updated whitelist entry for ID: ${id}`,
             changes: {
-                oldValue: { email },
+                oldValue: { id },
                 newValue: { email: newEmail }
             },
-            metadata: { targetEmail: newEmail }
+            metadata: { targetId: id, targetEmail: newEmail }
         })
     );
 
@@ -153,7 +153,7 @@ export const updateWhitelistedUser = catchAsync(async (req: Request, res: Respon
 });
 
 export const deleteWhitelistedUser = catchAsync(async (req: Request, res: Response) => {
-    const { email } = req.params;
+    const { id } = req.params;
     const tenantId = req.user?.tenantId;
 
     if (!tenantId) {
@@ -161,7 +161,7 @@ export const deleteWhitelistedUser = catchAsync(async (req: Request, res: Respon
     }
 
 
-    const user = await ImportedUser.findOneAndDelete({ email, tenantId });
+    const user = await ImportedUser.findOneAndDelete({ _id: id, tenantId });
 
     if (!user) {
         throw new AppError('Whitelisted user not found', 404);
@@ -175,8 +175,8 @@ export const deleteWhitelistedUser = catchAsync(async (req: Request, res: Respon
             userEmail: req.user?.email || 'unknown',
             action: 'DELETE',
             status: 'SUCCESS',
-            description: `Removed ${email} from whitelist`,
-            metadata: { targetEmail: email }
+            description: `Removed user with ID: ${id} (${user.email}) from whitelist`,
+            metadata: { targetId: id, targetEmail: user.email }
         })
     );
 

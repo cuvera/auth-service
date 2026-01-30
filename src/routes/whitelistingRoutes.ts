@@ -106,7 +106,7 @@ router.get('/', getWhitelistedUsers);
 
 /**
  * @swagger
- * /whitelisting/{email}:
+ * /whitelisting/{id}:
  *   patch:
  *     summary: Update whitelisted user email
  *     tags: [Whitelisting]
@@ -114,7 +114,7 @@ router.get('/', getWhitelistedUsers);
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: email
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
@@ -139,11 +139,11 @@ router.get('/', getWhitelistedUsers);
  *       200:
  *         description: User updated successfully
  */
-router.patch('/:email', updateWhitelistedUser);
+router.patch('/:id', updateWhitelistedUser);
 
 /**
  * @swagger
- * /whitelisting/{email}:
+ * /whitelisting/{id}:
  *   delete:
  *     summary: Remove user from whitelist
  *     tags: [Whitelisting]
@@ -151,7 +151,7 @@ router.patch('/:email', updateWhitelistedUser);
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: email
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
@@ -161,11 +161,11 @@ router.patch('/:email', updateWhitelistedUser);
  *         description: Tenant ID (fallback if not in bearer token)
  *         schema:
  *           type: string
- *     responses:
+ *     responses: 
  *       204:
  *         description: User removed from whitelist
  */
-router.delete('/:email', deleteWhitelistedUser);
+router.delete('/:id', deleteWhitelistedUser);
 
 
 

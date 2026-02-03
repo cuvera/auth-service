@@ -1,4 +1,4 @@
-import { generateKafkaMessage, logger, sendMessage } from "@cuvera/commons";
+import { generateKafkaMessage, logger } from "@cuvera/commons";
 import { topics } from '../config/rabbitmq';
 import { producer } from '../messaging/producers/producer';
 
@@ -17,10 +17,10 @@ export class MessageService {
             });
             await producer.sendMessage(topics.authLogs, message);
             return true;
-            }catch (error) {
-                logger.error(`Warning: Failed to send message to RabbitMQ: ${error}`);
-                return false;
-            }
+        } catch (error) {
+            logger.error(`Warning: Failed to send message to RabbitMQ: ${error}`);
+            return false;
+        }
     }
 
     static async sendUserData(payload: any): Promise<boolean> {
@@ -34,10 +34,10 @@ export class MessageService {
             });
             await producer.sendMessage(topics.userData, message);
             return true;
-            }catch (error) {
-                logger.error(`Warning: Failed to send message to RabbitMQ: ${error}`);
-                return false;
-            }
+        } catch (error) {
+            logger.error(`Warning: Failed to send message to RabbitMQ: ${error}`);
+            return false;
+        }
     }
 }
 

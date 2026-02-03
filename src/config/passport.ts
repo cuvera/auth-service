@@ -3,12 +3,18 @@ import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as SamlStrategy } from 'passport-saml';
 import axios from 'axios';
-import User from '../models/User';
-import ImportedUser from '../models/ImportedUser';
+import { getUserModel } from '../models/User';
 import { IJwtPayload } from '../interfaces';
+import { setContext } from '@cuvera/commons';
 import fs from 'fs';
 import path from 'path';
 import { MessageService } from '../services/message';
+import { getImportedUserModel } from '../models/ImportedUser';
+import { resolveTenantFromUrl } from '../utils/resolveTenant';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 /**
  * Fetches employee ID from the ingestion service
@@ -40,8 +46,14 @@ passport.serializeUser((user: any, done) => {
 // Deserialize user from session
 passport.deserializeUser(async (id: string, done) => {
     try {
-        const user = await User.findById(id);
-        done(null, user);
+        const userModel = await getUserModel();
+        const user = await userModel.findById(id);
+
+        if (user) {
+            await setContext({ tenantId: user.tenantId }, async () => { });
+            return done(null, user);
+        }
+        return done(null, false);
     } catch (error) {
         done(error);
     }
@@ -68,13 +80,16 @@ passport.use(
         },
         async (payload: IJwtPayload, done) => {
             try {
-                const user = await User.findById(payload.id);
+                await setContext({ tenantId: payload.tenantId }, async () => {
+                    const userModel = await getUserModel();
+                    const user = await userModel.findById(payload.id);
 
-                if (!user) {
-                    return done(null, false);
-                }
+                    if (!user) {
+                        return done(null, false);
+                    }
 
-                return done(null, user);
+                    return done(null, user);
+                });
             } catch (error) {
                 return done(error);
             }
@@ -105,93 +120,98 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         async (req: any, accessToken: string, refreshToken: string, profile: any, done: Function) => {
             console.log('Google OAuth callback received', refreshToken);
 
-            try {
-                const email = profile.emails?.[0]?.value;
-                if (!email) {
-                    throw new Error('No email found in Google profile');
+            // Decode state before setContext — we need originalUrl to resolve the tenant
+            let requestData: any = {};
+            if (req.query.state) {
+                try {
+                    const decodedState = Buffer.from(req.query.state, 'base64').toString('utf-8');
+                    requestData = JSON.parse(decodedState);
+                } catch (error) {
+                    console.error('Error parsing state data:', error);
                 }
-                // const isCalendarFlow = req.query.calendar === 'true';  
-                const isCalendarFlow = true;                              
-                // Get state data if available
-                let requestData: any = {};
-                if (req.query.state) {
-                    try {
-                        const decodedState = Buffer.from(req.query.state, 'base64').toString('utf-8');
-                        requestData = JSON.parse(decodedState);
-                    } catch (error) {
-                        console.error('Error parsing state data:', error);
-                    }
-                }
+            }
 
-                // Validate email access
-                const isAuthorized = await validateEmailAccess(email);
-                console.log("isAuthorized", isAuthorized);
-                if (!isAuthorized.allowed) {
+            // Resolve tenantId from the original URL's domain
+            const tenantId = await resolveTenantFromUrl(requestData.originalState || requestData.originalUrl || req.originalUrl);
+
+            await setContext({ tenantId }, async () => {
+                try {
+                    const email = profile.emails?.[0]?.value;
+                    if (!email) {
+                        throw new Error('No email found in Google profile');
+                    }
+                    // const isCalendarFlow = req.query.calendar === 'true';
+                    const isCalendarFlow = true;
+
+                    // Validate email access
+                    const isAuthorized = await validateEmailAccess(email, tenantId);
+                    if (!isAuthorized.allowed) {
+                        await sendAuthLog({
+                            email,
+                            provider: 'google',
+                            name: profile.displayName,
+                            tenantId,
+                            eventType: 'sign-in',
+                            errorType: 'access-denied',
+                            errorMessage: isAuthorized.message,
+                            status: 'FAILED',
+                            ipAddress: requestData.ip || req.ip,
+                            userAgent: requestData.userAgent || req.headers['user-agent'],
+                            endpoint: requestData.originalUrl || req.originalUrl,
+                            httpMethod: req.method
+                        });
+                        return done(null, false, { message: isAuthorized.message });
+                    }
+
+                    // Find or create user
+                    const { user, isNewUser } = await findOrCreateUser(profile, email, refreshToken, isCalendarFlow, tenantId);
+                    if (isNewUser) {
+                        await MessageService.sendUserData({
+                            userId: user._id,
+                            userEmail: user.email,
+                            google: user.google
+                        });
+                    }
+                    // Log successful authentication
                     await sendAuthLog({
-                        email,
+                        email: user.email,
                         provider: 'google',
-                        name: profile.displayName,
-                        tenantId: process.env.TENANT_ID || 'default',
-                        eventType: 'sign-in',
-                        errorType: 'access-denied',
-                        errorMessage: isAuthorized.message,
-                        status: 'FAILED',
+                        name: user.name,
+                        userId: user._id,
+                        tenantId,
+                        eventType: isNewUser ? 'sign-up' : 'sign-in',
+                        status: 'SUCCESS',
                         ipAddress: requestData.ip || req.ip,
                         userAgent: requestData.userAgent || req.headers['user-agent'],
                         endpoint: requestData.originalUrl || req.originalUrl,
+                        httpMethod: req.method,
+                        description: isNewUser ? 'New user registration via Google' : 'User login via Google'
+                    });
+
+                    return done(null, user);
+
+                } catch (error) {
+                    console.error('Google authentication error:', error);
+
+                    // Log the error
+                    await sendAuthLog({
+                        email: profile.emails?.[0]?.value || 'unknown',
+                        provider: 'google',
+                        name: profile.displayName || 'Unknown',
+                        tenantId,
+                        eventType: 'sign-in',
+                        errorType: 'authentication-error',
+                        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                        status: 'FAILED',
+                        ipAddress: req.ip,
+                        userAgent: req.headers['user-agent'],
+                        endpoint: req.originalUrl,
                         httpMethod: req.method
                     });
-                    return done(null, false, { message: isAuthorized.message });
+
+                    return done(error);
                 }
-
-                // Find or create user
-                const { user, isNewUser } = await findOrCreateUser(profile, email, refreshToken, isCalendarFlow);
-                if (isNewUser) {
-                    await MessageService.sendUserData({
-                        userId: user._id,
-                        userEmail: user.email,
-                        google: user.google  
-                    });
-                }
-                // Log successful authentication
-                await sendAuthLog({
-                    email: user.email,
-                    provider: 'google',
-                    name: user.name,
-                    userId: user._id,
-                    tenantId: process.env.TENANT_ID,
-                    eventType: isNewUser ? 'sign-up' : 'sign-in',
-                    status: 'SUCCESS',
-                    ipAddress: requestData.ip || req.ip,
-                    userAgent: requestData.userAgent || req.headers['user-agent'],
-                    endpoint: requestData.originalUrl || req.originalUrl,
-                    httpMethod: req.method,
-                    description: isNewUser ? 'New user registration via Google' : 'User login via Google'
-                });
-
-                return done(null, user);
-
-            } catch (error) {
-                console.error('Google authentication error:', error);
-
-                // Log the error
-                await sendAuthLog({
-                    email: profile.emails?.[0]?.value || 'unknown',
-                    provider: 'google',
-                    name: profile.displayName || 'Unknown',
-                    tenantId: process.env.TENANT_ID || 'default',
-                    eventType: 'sign-in',
-                    errorType: 'authentication-error',
-                    errorMessage: error instanceof Error ? error.message : 'Unknown error',
-                    status: 'FAILED',
-                    ipAddress: req.ip,
-                    userAgent: req.headers['user-agent'],
-                    endpoint: req.originalUrl,
-                    httpMethod: req.method
-                });
-
-                return done(error);
-            }
+            });
         }
     );
 
@@ -232,13 +252,14 @@ async function sendAuthLog(payload: any): Promise<void> {
     }
 }
 
-async function validateEmailAccess(email: string): Promise<{ allowed: boolean; message?: string }> {
+async function validateEmailAccess(email: string, tenantId: string): Promise<{ allowed: boolean; message?: string }> {
     try {
         const allowedDomain = process.env.GOOGLE_DOMAIN_NAME;
 
-        const importedUser = await ImportedUser.findOne({
+        const importedUserModel = await getImportedUserModel();
+        const importedUser = await importedUserModel.findOne({
             email: email.toLowerCase(),
-            tenantId: process.env.TENANT_ID || 'default'
+            tenantId
         });
         console.log("importedUser", importedUser)
         const emailDomain = email.split('@')[1];
@@ -269,27 +290,28 @@ async function findOrCreateUser(
     profile: any,
     email: string,
     refreshToken?: string,
-    isCalendarFlow?: boolean
+    isCalendarFlow?: boolean,
+    tenantId?: string
 ): Promise<{ user: any; isNewUser: boolean }> {
     let user;
     let isNewUser = false;
 
     // Check if user exists with Google ID
-    user = await User.findOne({ 'google.googleId': profile.id });
-    
+    const userModel = await getUserModel();
+    user = await userModel.findOne({ 'google.googleId': profile.id });
+
     if (!user) {
-        user = await User.findOne({ email });
+        user = await userModel.findOne({ email });
         if (user) {
             user.google = user.google || {};
             user.google.googleId = profile.id;
         } else {
             isNewUser = true;
-            
+
             // Fetch employee details for new user
             const employeeDetails: any = await fetchEmployeeDetails(email);
-            console.log("employeeDetails", employeeDetails);
-            
-            user = new User({
+
+            user = new userModel({
                 google: {
                     googleId: profile.id
                 },
@@ -299,7 +321,7 @@ async function findOrCreateUser(
                 provider: 'google',
                 employeeId: employeeDetails?.data?.employeeId,
                 password: Math.random().toString(36).slice(-8),
-                tenantId: process.env.TENANT_ID || 'default',
+                tenantId: tenantId,
                 department: employeeDetails?.data?.department,
                 designation: employeeDetails?.data?.designation
             });
@@ -375,53 +397,56 @@ if (process.env.SAML_ENTRY_POINT && process.env.SAML_ISSUER) {
             new (SamlStrategy as any)(
                 samlConfig,
                 async (samlProfile: any, done: any) => {
-                    try {
-                        const name = samlProfile['http://schemas.microsoft.com/identity/claims/displayname'] ||
-                            samlProfile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
-                            samlProfile.nameID;
-                        const email = samlProfile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
-                            samlProfile.email;
+                    await setContext({ tenantId: process.env.TENANT_ID || 'default' }, async () => {
+                        try {
+                            const name = samlProfile['http://schemas.microsoft.com/identity/claims/displayname'] ||
+                                samlProfile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+                                samlProfile.nameID;
+                            const email = samlProfile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
+                                samlProfile.email;
 
-                        let role = samlProfile['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
-                            samlProfile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role'];
+                            let role = samlProfile['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
+                                samlProfile['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role'];
 
-                        if (!role && samlProfile.attributes) {
-                            const attrs = samlProfile.attributes as Record<string, unknown>;
-                            role = attrs['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
-                                attrs['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role'];
+                            if (!role && samlProfile.attributes) {
+                                const attrs = samlProfile.attributes as Record<string, unknown>;
+                                role = attrs['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
+                                    attrs['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role'];
+                            }
+
+                            const userModel = await getUserModel();
+                            // Check if user already exists with this SAML ID
+                            const existingUser = await userModel.findOne({ email });
+                            if (existingUser) {
+                                return done(null, existingUser);
+                            }
+
+                            // Check if user exists with the same email
+                            const userByEmail = await userModel.findOne({ email });
+
+                            if (userByEmail) {
+                                // Link SAML account to existing user
+                                userByEmail.samlId = samlProfile.nameID;
+                                await userByEmail.save();
+                                return done(null, userByEmail);
+                            }
+
+                            // Create new user
+                            const newUser = new userModel({
+                                samlId: samlProfile.nameID,
+                                name,
+                                email,
+                                provider: 'saml',
+                                // Generate a random password for SAML users
+                                password: Math.random().toString(36).slice(-8),
+                            });
+
+                            await newUser.save();
+                            return done(null, newUser);
+                        } catch (error) {
+                            return done(error);
                         }
-
-                        // Check if user already exists with this SAML ID
-                        const existingUser = await User.findOne({ email });
-                        if (existingUser) {
-                            return done(null, existingUser);
-                        }
-
-                        // Check if user exists with the same email
-                        const userByEmail = await User.findOne({ email });
-
-                        if (userByEmail) {
-                            // Link SAML account to existing user
-                            userByEmail.samlId = samlProfile.nameID;
-                            await userByEmail.save();
-                            return done(null, userByEmail);
-                        }
-
-                        // Create new user
-                        const newUser = new User({
-                            samlId: samlProfile.nameID,
-                            name,
-                            email,
-                            provider: 'saml',
-                            // Generate a random password for SAML users
-                            password: Math.random().toString(36).slice(-8),
-                        });
-
-                        await newUser.save();
-                        return done(null, newUser);
-                    } catch (error) {
-                        return done(error);
-                    }
+                    });
                 }
             )
         );

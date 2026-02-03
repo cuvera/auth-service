@@ -1,9 +1,10 @@
-import mongoose, { Schema } from 'mongoose';
+import { Schema, Connection, Model } from 'mongoose';
 import bcrypt from 'bcrypt';
 import validator from 'validator';
 import { IUser } from '../interfaces';
+import { getDb } from '@cuvera/commons';
 
-const userSchema = new Schema<IUser>(
+export const userSchema = new Schema<IUser>(
   {
     name: {
       type: String,
@@ -98,6 +99,10 @@ userSchema.methods.comparePassword = async function (
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-const User = mongoose.model<IUser>('User', userSchema);
+export async function getUserModel(connection?: Connection): Promise<Model<IUser>> {
+  if (!connection) {
+    connection = await getDb();
+  }
 
-export default User;
+  return (connection.models.User as Model<IUser>) || connection.model<IUser>('User', userSchema);
+}

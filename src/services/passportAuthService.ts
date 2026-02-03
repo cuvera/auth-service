@@ -24,7 +24,7 @@ export class PassportAuthService {
         if (req.query.calendar === 'true') {
             scope.push('https://www.googleapis.com/auth/calendar.readonly');
         }
-        
+
         const options: any = {
             scope,
             accessType: 'offline',
@@ -36,7 +36,7 @@ export class PassportAuthService {
         if (this.isIOS(req)) {
             options.prompt = "select_account";
         }
-        
+
         return passport.authenticate('google', options);
     }
 
@@ -61,7 +61,7 @@ export class PassportAuthService {
             includeGrantedScopes: false,
             state: Buffer.from(JSON.stringify(stateData)).toString('base64'),
         };
-        
+
 
         return passport.authenticate('google', options);
     }
@@ -72,7 +72,7 @@ export class PassportAuthService {
         return (req: Request, res: Response, next: NextFunction) => {
             passport.authenticate('google', { session: false }, (err: any, user: any, info: any) => {
                 let frontendUrl = process.env.FRONTEND_URL || '';
-                
+
                 // Try to get frontend URL from state parameter
                 if (req.query.state) {
                     try {
@@ -87,7 +87,7 @@ export class PassportAuthService {
                     const errorMessage = encodeURIComponent(err.message || 'Unknown error occurred');
                     return res.redirect(`${frontendUrl}/login?error=google_auth_failed&message=${errorMessage}`);
                 }
-                
+
                 if (!user) {
                     const errorMessage = encodeURIComponent(info?.message || 'Authentication failed');
                     return res.redirect(`${frontendUrl}/login?error=google_auth_failed&message=${errorMessage}`);
@@ -112,7 +112,7 @@ export class PassportAuthService {
             console.log('Request method:', req.method);
             console.log('Request URL:', req.url);
             console.log('Query params:', req.query);
-            
+
             try {
                 passport.authenticate('saml', {
                     session: false,

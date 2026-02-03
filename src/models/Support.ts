@@ -1,8 +1,8 @@
-import mongoose, { Schema } from 'mongoose';
+import { Schema, Connection, Model } from 'mongoose';
 import { IWhitelistedUser, ISupportUser } from '../interfaces/support.interface';
 
 // WhitelistedUser Model
-const whitelistedUserSchema = new Schema<IWhitelistedUser>(
+export const whitelistedUserSchema = new Schema<IWhitelistedUser>(
     {
         email: {
             type: String,
@@ -24,10 +24,12 @@ const whitelistedUserSchema = new Schema<IWhitelistedUser>(
 
 whitelistedUserSchema.index({ email: 1, tenantId: 1 }, { unique: true });
 
-export const WhitelistedUser = mongoose.model<IWhitelistedUser>('WhitelistedUser', whitelistedUserSchema);
+export function getWhitelistedUserModel(connection: Connection): Model<IWhitelistedUser> {
+  return (connection.models.WhitelistedUser as Model<IWhitelistedUser>) || connection.model<IWhitelistedUser>('WhitelistedUser', whitelistedUserSchema);
+}
 
 // SupportUser Model (Points to 'users' collection with all fields)
-const supportUserSchema = new Schema<ISupportUser>(
+export const supportUserSchema = new Schema<ISupportUser>(
     {
         name: String,
         email: String,
@@ -47,4 +49,6 @@ const supportUserSchema = new Schema<ISupportUser>(
     }
 );
 
-export const SupportUser = mongoose.model<ISupportUser>('SupportUser', supportUserSchema);
+export function getSupportUserModel(connection: Connection): Model<ISupportUser> {
+  return (connection.models.SupportUser as Model<ISupportUser>) || connection.model<ISupportUser>('SupportUser', supportUserSchema);
+}

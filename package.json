@@ -21,7 +21,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@cuvera/commons": "^1.2.3",
+    "@cuvera/commons": "^1.3.1",
     "@types/express-session": "^1.18.2",
     "amqplib": "^0.10.9",
     "axios": "^1.12.2",

@@ -4,7 +4,10 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
-import connectDB from './config/database';
+
+// Load environment variables
+dotenv.config();
+
 import passport from './config/passport';
 import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
@@ -13,15 +16,11 @@ import { globalErrorHandler } from './middlewares/errorHandler';
 import { setupSwagger } from './config/swagger';
 import { AppError } from './utils/appError';
 import { producer } from './messaging/producers/producer';
-import { extractUserPrincipal } from '@cuvera/commons'
-// Load environment variables
-dotenv.config();
+import { extractUserPrincipal } from '@cuvera/commons';
+import { setTenantContext, connectionManager } from '@cuvera/commons';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Connect to MongoDB
-connectDB();
 
 // Security middleware
 app.use(helmet());
@@ -64,6 +63,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(extractUserPrincipal());
+
+// Enable multi-tenancy
+connectionManager.setDBPrefix('auth');
+app.use(setTenantContext());
 
 // Session configuration for OAuth
 app.use(session({
@@ -137,7 +140,7 @@ process.on('unhandledRejection', async (err: Error) => {
   console.error('UNHANDLED REJECTION! Shutting down...');
   console.error(err.name, err);
   try {
-    await close();
+    await connectionManager.closeAll();
   } catch (error) {
     console.error('Error closing RabbitMQ connection:', error);
   }

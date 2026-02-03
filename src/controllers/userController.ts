@@ -140,6 +140,38 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
   res.status(200).json(response);
 });
 
+export const getUserByEmail = catchAsync(async (req: Request, res: Response) => {
+  const { email } = req.params;
+  console.log("email", email)
+  const user = await userService.getUserByEmail(email);
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  const userResponse: IUserResponse = {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    employeeId: user.employeeId,
+    department: user.department,
+    designation: user.designation,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    googleRefreshToken: user?.google?.googleRefreshToken,
+
+  };
+
+  const response: IApiResponse<{ user: IUserResponse }> = {
+    status: 'success',
+    data: {
+      user: userResponse,
+    },
+  };
+
+  res.status(200).json(response);
+});
+
 export const getUserByEmployeeId = catchAsync(async (req: Request, res: Response) => {
   const { employeeId } = req.params;
   const user = await userService.getUserByEmployeeId(employeeId);

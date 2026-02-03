@@ -9,6 +9,7 @@ import {
     getDepartmentUserCounts,
     getUsersByEmailIds,
     updateUserInfo,
+    getUserByEmail,
 } from '../controllers/userController';
 
 import { protect, restrictTo } from '../middlewares/auth';
@@ -365,6 +366,41 @@ router.delete('/:id/roles', removeUserRoles);
  *         description: User not found
  */
 router.get('/employee/:employeeId', getUserByEmployeeId);
+
+/**
+ * @swagger
+ * /users/email/{email}:
+ *   get:
+ *     summary: Get user by Email
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: email
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: User Email
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+router.get('/email/:email', getUserByEmail);
 
 /**
  * @swagger

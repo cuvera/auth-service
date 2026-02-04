@@ -1,14 +1,15 @@
-import User from '../models/User';
+import { getUserModel } from '../models/User';
 import { IUser, ICreateUserRequest, IUpdateUserRequest } from '../interfaces';
+import { getTenantId } from '@cuvera/commons';
 
 export class UserService {
   async createUser(userData: ICreateUserRequest): Promise<IUser> {
-    const user = new User(userData);
+    const userModel = await getUserModel();
+    const user = new userModel(userData);
     return user.save();
   }
 
   async getAllUsers(
-    tenantId: string,
     page: number = 1,
     limit: number = 10,
     search?: string,
@@ -20,9 +21,10 @@ export class UserService {
       designation?: string;
     }
   ): Promise<{ users: IUser[]; totalCount: number; totalPages: number }> {
+    const userModel = await getUserModel();
     const skip = (page - 1) * limit;
 
-    let searchQuery: any = { tenantId };
+    let searchQuery: any = { tenantId: getTenantId() };
 
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.trim(), 'i');
@@ -41,8 +43,8 @@ export class UserService {
     }
 
     const [users, totalCount] = await Promise.all([
-      User.find(searchQuery).select('-password -googleId -samlId').skip(skip).limit(limit).sort({ createdAt: -1 }),
-      User.countDocuments(searchQuery)
+      userModel.find(searchQuery).select('-password -googleId -samlId').skip(skip).limit(limit).sort({ createdAt: -1 }),
+      userModel.countDocuments(searchQuery)
     ]);
 
     const totalPages = Math.ceil(totalCount / limit);
@@ -55,38 +57,41 @@ export class UserService {
   }
 
   async getUserById(id: string): Promise<IUser | null> {
-    return User.findById(id).select('-password');
+    const userModel = await getUserModel();
+    return userModel.findById(id).select('-password');
   }
 
   async getUserByEmail(email: string): Promise<IUser | null> {
-    return User.findOne({ email }).select('+password');
+    const userModel = await getUserModel();
+    return userModel.findOne({ email }).select('+password');
   }
 
   async getUserByEmployeeId(employeeId: string): Promise<IUser | null> {
-    return User.findOne({ employeeId }).select('-password');
+    const userModel = await getUserModel();
+    return userModel.findOne({ employeeId }).select('-password');
   }
+
   async updateUser(
     id: string,
     updateData: IUpdateUserRequest,
-    tenantId?: string
   ): Promise<IUser | null> {
-    const query: any = { _id: id };
-    if (tenantId) {
-      query.tenantId = tenantId;
-    }
+    const userModel = await getUserModel();
+    const query: any = { _id: id, tenantId: getTenantId() };
 
-    return User.findOneAndUpdate(query, updateData, {
+    return userModel.findOneAndUpdate(query, updateData, {
       new: true,
       runValidators: true,
     }).select('-password');
   }
 
   async deleteUser(id: string): Promise<IUser | null> {
-    return User.findByIdAndDelete(id);
+    const userModel = await getUserModel();
+    return userModel.findByIdAndDelete(id);
   }
 
   async addUserRoles(id: string, newRoles: string[]): Promise<IUser | null> {
-    const user = await User.findById(id);
+    const userModel = await getUserModel();
+    const user = await userModel.findById(id);
     if (!user) {
       return null;
     }
@@ -95,7 +100,7 @@ export class UserService {
     const uniqueNewRoles = newRoles.filter(role => !existingRoles.includes(role));
     const updatedRoles = [...existingRoles, ...uniqueNewRoles];
 
-    return User.findByIdAndUpdate(
+    return userModel.findByIdAndUpdate(
       id,
       { roles: updatedRoles },
       { new: true, runValidators: true }
@@ -103,7 +108,8 @@ export class UserService {
   }
 
   async removeUserRoles(id: string, rolesToRemove: string[]): Promise<IUser | null> {
-    const user = await User.findById(id);
+    const userModel = await getUserModel();
+    const user = await userModel.findById(id);
     if (!user) {
       return null;
     }
@@ -115,7 +121,7 @@ export class UserService {
       throw new Error('User must have at least one role');
     }
 
-    return User.findByIdAndUpdate(
+    return userModel.findByIdAndUpdate(
       id,
       { roles: updatedRoles },
       { new: true, runValidators: true }
@@ -123,13 +129,14 @@ export class UserService {
   }
 
   async getDepartmentUserCounts(): Promise<{ department: string; count: number; percentage: number }[]> {
-    const totalCount = await User.countDocuments({ department: { $exists: true, $ne: null } });
+    const userModel = await getUserModel();
+    const totalCount = await userModel.countDocuments({ department: { $exists: true, $ne: null } });
 
     if (totalCount === 0) {
       return [];
     }
 
-    const departmentCounts = await User.aggregate([
+    const departmentCounts = await userModel.aggregate([
       { $match: { department: { $exists: true, $ne: null } } },
       { $group: { _id: '$department', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
@@ -156,7 +163,8 @@ export class UserService {
       return [];
     }
 
-    return User.find({ email: { $in: emailIds } }).select('-password');
+    const userModel = await getUserModel();
+    return userModel.find({ email: { $in: emailIds } }).select('-password');
   }
 }
 

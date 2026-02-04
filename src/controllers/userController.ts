@@ -4,20 +4,6 @@ import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 import { auditLogService } from '../services/auditLogService';
 import { ICreateUserRequest, IApiResponse, IUserResponse, IUserWithRolesResponse, IPaginatedResponse, IBulkFetchUsersRequest, IUpdateUserRequest } from '../interfaces';
-import { log } from 'util';
-
-const extractTenantId = (req: Request): string | undefined => {
-  return (
-    req.user?.tenantId ||
-    req.headers['x-tenant-id'] ||
-    req.headers['tenant-id'] ||
-    req.headers['tenet-id'] ||
-    req.headers['tenent-id'] ||
-    req.headers['tenantid'] ||
-    req.headers['X-Tenant-Id'] ||
-    req.headers['Tenant-Id']
-  ) as string | undefined;
-};
 
 export const createUser = catchAsync(async (req: Request, res: Response) => {
   const { name, email, password }: ICreateUserRequest = req.body;
@@ -76,7 +62,7 @@ export const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('Limit must be between 1 and 100', 400);
   }
 
-  const result = await userService.getAllUsers(tenantId, page, limit, search, filters);
+  const result = await userService.getAllUsers(page, limit, search, filters);
 
   const usersResponse: IUserWithRolesResponse[] = result.users.map(user => ({
     id: user._id.toString(),
@@ -388,7 +374,7 @@ export const updateUserInfo = catchAsync(async (req: Request, res: Response) => 
     throw new AppError('User not found', 404);
   }
 
-  const user = await userService.updateUser(id, updateData, tenantId);
+  const user = await userService.updateUser(id, updateData);
 
   if (!user) {
     throw new AppError('User not found', 404);

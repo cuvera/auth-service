@@ -207,12 +207,10 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
         }
 
         if (!req.user) {
-            console.log("req.user", req.user);
             return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
         }
 
         const { user, tokens } = passportAuthService.handleAuthSuccess(req.user);
-
 
         // Set refresh token as HTTP-only cookie
         const cookieOptions = {

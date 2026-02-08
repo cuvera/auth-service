@@ -12,7 +12,10 @@ services:
         mode: ingress
 
     networks:
-      - cuvera-ingress
+      cuvera-backend:
+        aliases:
+          - ${SERVICE_NAME}
+      cuvera-internal: {}
 
     volumes:
       - app-data:/data
@@ -56,5 +59,7 @@ volumes:
     driver: local
 
 networks:
-  cuvera-ingress:
+  cuvera-backend:
+    external: true
+  cuvera-internal:
     external: true

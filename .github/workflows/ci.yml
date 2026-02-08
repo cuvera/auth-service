@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  workflow_dispatch: # disabled — trigger manually if needed
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  ci:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Create .npmrc
+        run: |
+          if [ -n "${{ secrets.NPMRC_CONTENT }}" ]; then
+            echo "${{ secrets.NPMRC_CONTENT }}" | sed 's/\\n/\n/g' > .npmrc
+          else
+            cat > .npmrc << EOF
+          @cuvera:registry=https://pkgs.dev.azure.com/ashwinialike/_packaging/ashwinialike/npm/registry/
+          //pkgs.dev.azure.com/ashwinialike/_packaging/ashwinialike/npm/registry/:username=ashwinialike
+          //pkgs.dev.azure.com/ashwinialike/_packaging/ashwinialike/npm/registry/:_password=${{ secrets.AZURE_DEVOPS_TOKEN }}
+          //pkgs.dev.azure.com/ashwinialike/_packaging/ashwinialike/npm/registry/:email=info@cuvera.ai
+          //pkgs.dev.azure.com/ashwinialike/_packaging/ashwinialike/npm/registry/:always-auth=true
+          registry=https://registry.npmjs.org/
+          EOF
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build

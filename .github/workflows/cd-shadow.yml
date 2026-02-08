@@ -78,7 +78,7 @@ jobs:
           set -e
           echo "${{ secrets.DOCKER_REGISTRY_PASSWORD }}" | docker login ${{ secrets.DOCKER_REGISTRY_URL }} -u ${{ secrets.DOCKER_REGISTRY_USERNAME }} --password-stdin
           cd $DEPLOY_PATH
-          docker stack deploy -c docker-compose.swarm.yml ${{ env.SERVICE_NAME }} --with-registry-auth
+          docker stack deploy -c docker-compose.swarm.yml ${{ env.SERVICE_NAME }} --with-registry-auth --resolve-image always
           ENDSSH
 
       - name: Health check

@@ -47,7 +47,7 @@ services:
       update_config:
         parallelism: 1
         delay: 10s
-        order: start-first
+        order: stop-first
 
       rollback_config:
         parallelism: 1

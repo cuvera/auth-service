@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json .npmrc ./
 
-RUN npm ci
+RUN npm ci --silent
 
 COPY . .
 
@@ -18,9 +18,9 @@ RUN addgroup -g 1001 -S nodejs && \
 
 WORKDIR /app
 
-COPY package*.json .npmrc ./
-
-RUN npm ci --omit=dev && npm cache clean --force && rm -f .npmrc
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+RUN npm prune --omit=dev --silent
 
 COPY --from=builder --chown=cuvera:nodejs /app/dist ./dist
 

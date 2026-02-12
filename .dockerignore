@@ -13,3 +13,8 @@ dist
 .claude
 .DS_Store
 *.log
+docker-compose*.yml
+.dockerignore
+Dockerfile
+.vscode
+.idea

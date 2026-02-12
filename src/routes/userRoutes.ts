@@ -8,7 +8,10 @@ import {
     getUserByEmployeeId,
     getDepartmentUserCounts,
     getUsersByEmailIds,
+    updateUserInfo,
+    getUserByEmail,
 } from '../controllers/userController';
+
 import { protect, restrictTo } from '../middlewares/auth';
 
 const router = Router();
@@ -44,12 +47,22 @@ const router = Router();
  *           type: string
  *           format: date-time
  *           description: The date the user was last updated
+ *         employeeId:
+ *           type: string
+ *         department:
+ *           type: string
+ *         designation:
+ *           type: string
  *       example:
  *         id: 60d0fe4f5311236168a109ca
  *         name: John Doe
  *         email: john@example.com
+ *         employeeId: "10597"
+ *         department: "SCM - Sub Contract"
+ *         designation: "General Manager"
  *         createdAt: 2023-01-01T00:00:00.000Z
  *         updatedAt: 2023-01-01T00:00:00.000Z
+
  */
 
 /**
@@ -105,6 +118,7 @@ const router = Router();
  *         description: Bad request
  */
 router.post('/', createUser);
+
 
 /**
  * @swagger
@@ -172,6 +186,7 @@ router.post('/', createUser);
  */
 router.get('/', getAllUsers);
 
+
 /**
  * @swagger
  * /users/{id}:
@@ -205,12 +220,12 @@ router.get('/', getAllUsers);
  *       404:
  *         description: User not found
  */
-router.get('/:id', protect, getUserById);
+router.get('/:id', getUserById);
 
 /**
  * @swagger
  * /users/{id}/roles:
- *   patch:
+ *   put:
  *     summary: Add roles to user
  *     tags: [Users]
  *     security:
@@ -315,7 +330,7 @@ router.put('/:id/roles', addUserRoles);
  *       404:
  *         description: User not found
  */
-router.delete('/:id/roles', protect, restrictTo('admin'), removeUserRoles);
+router.delete('/:id/roles', removeUserRoles);
 
 /**
  * @swagger
@@ -351,6 +366,41 @@ router.delete('/:id/roles', protect, restrictTo('admin'), removeUserRoles);
  *         description: User not found
  */
 router.get('/employee/:employeeId', getUserByEmployeeId);
+
+/**
+ * @swagger
+ * /users/email/{email}:
+ *   get:
+ *     summary: Get user by Email
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: email
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: User Email
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+router.get('/email/:email', getUserByEmail);
 
 /**
  * @swagger
@@ -460,4 +510,48 @@ router.get('/departments/counts', getDepartmentUserCounts);
  */
 router.post('/bulk-fetch', getUsersByEmailIds);
 
+/**
+ * @swagger
+ * /users/{id}:
+ *   patch:
+ *     summary: Update user info
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               department:
+ *                 type: string
+ *               designation:
+ *                 type: string
+ *               employeeId:
+ *                 type: string
+ *             example:
+ *               name: Gulshan Banpela
+ *               department: SCM - Sub Contract
+ *               designation: General Manager
+ *               employeeId: "10597"
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *       404:
+ *         description: User not found
+ */
+router.patch('/:id', updateUserInfo);
+
 export default router;
+

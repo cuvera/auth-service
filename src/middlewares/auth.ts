@@ -3,7 +3,8 @@ import passport from 'passport';
 import { AppError } from '../utils/appError';
 import { verifyToken } from '../utils/jwt';
 import { IUser } from '../interfaces';
-import User from '../models/User';
+import { getUserModel } from '../models/User';
+import { setContext } from '@cuvera/commons';
 
 // Extend Express Request interface to include user
 declare global {
@@ -24,9 +25,11 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
         }
 
         req.user = user;
-        next();
+        setContext({ tenantId: user.tenantId, userId: user._id?.toString() }, () => next());
     })(req, res, next);
 };
+
+
 
 // Alternative protect middleware using manual JWT verification
 export const protectManual = async (req: Request, res: Response, next: NextFunction) => {
@@ -44,15 +47,17 @@ export const protectManual = async (req: Request, res: Response, next: NextFunct
         // 2) Verification token
         const decoded = verifyToken(token);
 
-        // 3) Check if user still exists
-        const currentUser = await User.findById(decoded.id);
-        if (!currentUser) {
-            return next(new AppError('The user belonging to this token does no longer exist.', 401));
-        }
+        // 3) Check if user still exists — context must be set before model lookup
+        await setContext({ tenantId: decoded.tenantId, userId: decoded.id }, async () => {
+            const userModel = await getUserModel();
+            const currentUser = await userModel.findById(decoded.id);
+            if (!currentUser) {
+                return next(new AppError('The user belonging to this token does no longer exist.', 401));
+            }
 
-        // Grant access to protected route
-        req.user = currentUser;
-        next();
+            req.user = currentUser;
+            next();
+        });
     } catch (error) {
         return next(new AppError('Invalid token. Please log in again!', 401));
     }
@@ -70,7 +75,7 @@ export const restrictTo = (...roles: string[]) => {
         }
 
         const hasRequiredRole = roles.some(role => req.user!.roles.includes(role));
-        
+
         if (!hasRequiredRole) {
             return next(new AppError('You do not have permission to perform this action.', 403));
         }

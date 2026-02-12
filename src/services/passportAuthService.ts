@@ -13,25 +13,56 @@ export class PassportAuthService {
     }
     // Google OAuth authentication wrapper
     authenticateGoogle(req: Request) {
-        // Create a state object with the request data we need
         const stateData = {
             originalUrl: req.originalUrl,
             ip: req.ip,
             userAgent: req.headers['user-agent'],
-            // Add any other request data you need
             ...(req.query.state ? { originalState: req.query.state } : {})
         };
 
+        const scope = ['openid', 'profile', 'email', 'https://www.googleapis.com/auth/calendar.events'];
+        if (req.query.calendar === 'true') {
+            scope.push('https://www.googleapis.com/auth/calendar.readonly');
+        }
+
         const options: any = {
-            scope: ['profile', 'email'],
-            // Encode the state as a URL-safe string
+            scope,
+            accessType: 'offline',
+            includeGrantedScopes: false,
+            prompt: 'consent',
             state: Buffer.from(JSON.stringify(stateData)).toString('base64')
         };
 
         if (this.isIOS(req)) {
             options.prompt = "select_account";
         }
-        
+
+        return passport.authenticate('google', options);
+    }
+
+    //Calendar connect
+    authenticateGoogleCalendar(req: Request) {
+        const stateData = {
+            originalUrl: req.originalUrl,
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+        };
+
+        const options = {
+            scope: [
+                'openid',
+                'profile',
+                'email',
+                'https://www.googleapis.com/auth/calendar.readonly',
+                'https://www.googleapis.com/auth/calendar.events'
+            ],
+            accessType: 'offline',
+            prompt: 'consent',
+            includeGrantedScopes: false,
+            state: Buffer.from(JSON.stringify(stateData)).toString('base64'),
+        };
+
+
         return passport.authenticate('google', options);
     }
 
@@ -41,7 +72,7 @@ export class PassportAuthService {
         return (req: Request, res: Response, next: NextFunction) => {
             passport.authenticate('google', { session: false }, (err: any, user: any, info: any) => {
                 let frontendUrl = process.env.FRONTEND_URL || '';
-                
+
                 // Try to get frontend URL from state parameter
                 if (req.query.state) {
                     try {
@@ -56,7 +87,7 @@ export class PassportAuthService {
                     const errorMessage = encodeURIComponent(err.message || 'Unknown error occurred');
                     return res.redirect(`${frontendUrl}/login?error=google_auth_failed&message=${errorMessage}`);
                 }
-                
+
                 if (!user) {
                     const errorMessage = encodeURIComponent(info?.message || 'Authentication failed');
                     return res.redirect(`${frontendUrl}/login?error=google_auth_failed&message=${errorMessage}`);
@@ -81,7 +112,7 @@ export class PassportAuthService {
             console.log('Request method:', req.method);
             console.log('Request URL:', req.url);
             console.log('Query params:', req.query);
-            
+
             try {
                 passport.authenticate('saml', {
                     session: false,

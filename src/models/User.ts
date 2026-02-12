@@ -1,9 +1,10 @@
-import mongoose, { Schema } from 'mongoose';
+import { Schema, Connection, Model } from 'mongoose';
 import bcrypt from 'bcrypt';
 import validator from 'validator';
 import { IUser } from '../interfaces';
+import { getDb } from '@cuvera/commons';
 
-const userSchema = new Schema<IUser>(
+export const userSchema = new Schema<IUser>(
   {
     name: {
       type: String,
@@ -27,10 +28,6 @@ const userSchema = new Schema<IUser>(
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
-    googleId: {
-      type: String,
-      sparse: true,
-    },
     samlId: {
       type: String,
       sparse: true,
@@ -48,7 +45,7 @@ const userSchema = new Schema<IUser>(
       default: 'default',
       required: true,
     },
-    roles:  {
+    roles: {
       type: [String],
       default: ['user'],
     },
@@ -60,6 +57,26 @@ const userSchema = new Schema<IUser>(
     },
     designation: {
       type: String,
+    },
+    google: {
+      googleId: {
+        type: String,
+        sparse: true,
+      },
+      googleRefreshToken: {
+        type: String,
+      },
+      googleScopes: {
+        type: [String],
+        default: [],
+      },
+      googleCalendarConnected: {
+        type: Boolean,
+        default: false,
+      },
+      googleCalendarConnectedAt: {
+        type: Date,
+      },
     },
   },
   {
@@ -82,6 +99,10 @@ userSchema.methods.comparePassword = async function (
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-const User = mongoose.model<IUser>('User', userSchema);
+export async function getUserModel(connection?: Connection): Promise<Model<IUser>> {
+  if (!connection) {
+    connection = await getDb();
+  }
 
-export default User;
+  return (connection.models.User as Model<IUser>) || connection.model<IUser>('User', userSchema);
+}

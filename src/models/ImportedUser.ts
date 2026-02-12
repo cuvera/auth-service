@@ -1,5 +1,6 @@
-import mongoose, { Schema } from 'mongoose';
+import { Schema, Connection, Model } from 'mongoose';
 import validator from 'validator';
+import { getDb } from '@cuvera/commons';
 
 export interface IImportedUser {
     email: string;
@@ -7,7 +8,7 @@ export interface IImportedUser {
     importedAt: Date;
 }
 
-const importedUserSchema = new Schema<IImportedUser>(
+export const importedUserSchema = new Schema<IImportedUser>(
     {
         email: {
             type: String,
@@ -29,6 +30,9 @@ const importedUserSchema = new Schema<IImportedUser>(
 // Add index for faster queries
 importedUserSchema.index({ email: 1, tenantId: 1 }, { unique: true });
 
-const ImportedUser = mongoose.model<IImportedUser>('ImportedUser', importedUserSchema);
-
-export default ImportedUser;
+export async function getImportedUserModel(connection?: Connection): Promise<Model<IImportedUser>> {
+    if (!connection) {
+        connection = await getDb();
+    }
+    return (connection.models.ImportedUser as Model<IImportedUser>) || connection.model<IImportedUser>('ImportedUser', importedUserSchema);
+}

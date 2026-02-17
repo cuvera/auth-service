@@ -25,12 +25,17 @@ export class PassportAuthService {
             scope.push('https://www.googleapis.com/auth/calendar.readonly');
         }
 
+        // const options: any = {
+        //     scope,
+        //     accessType: 'offline',
+        //     includeGrantedScopes: false,
+        //     prompt: 'consent',
+        //     state: Buffer.from(JSON.stringify(stateData)).toString('base64')
+        // };
         const options: any = {
-            scope,
-            accessType: 'offline',
+            scope: ['openid', 'profile', 'email'],
             includeGrantedScopes: false,
-            prompt: 'consent',
-            state: Buffer.from(JSON.stringify(stateData)).toString('base64')
+            state: Buffer.from(JSON.stringify(stateData)).toString('base64'),
         };
 
         if (this.isIOS(req)) {
@@ -46,6 +51,7 @@ export class PassportAuthService {
             originalUrl: req.originalUrl,
             ip: req.ip,
             userAgent: req.headers['user-agent'],
+            ...(req.query.state ? { originalState: req.query.state } : {})
         };
 
         const options = {
@@ -61,8 +67,9 @@ export class PassportAuthService {
             includeGrantedScopes: false,
             state: Buffer.from(JSON.stringify(stateData)).toString('base64'),
         };
-
-
+        if (this.isIOS(req)) {
+            options.prompt = "select_account";
+        }
         return passport.authenticate('google', options);
     }
 

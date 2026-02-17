@@ -222,8 +222,7 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
         };
 
         res.cookie('refreshToken', tokens.refreshToken, cookieOptions);
-        console.log("tokens", tokens)
-        res.redirect(`${frontendUrl}/login?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`);
+        res.redirect(`${frontendUrl}/login?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&googleCalendarConnected=${user.google?.googleCalendarConnected}`);
     });
 });
 

@@ -118,8 +118,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             passReqToCallback: true, // This allows us to access the request object
         },
         async (req: any, accessToken: string, refreshToken: string, profile: any, done: Function) => {
-            console.log('Google OAuth callback received', refreshToken);
-
             // Decode state before setContext — we need originalUrl to resolve the tenant
             let requestData: any = {};
             if (req.query.state) {
@@ -130,9 +128,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
                     console.error('Error parsing state data:', error);
                 }
             }
+            console.log("requestData", requestData)
 
             // Resolve tenantId from the original URL's domain
-            const tenantId = await resolveTenantFromUrl(requestData.originalState || requestData.originalUrl || req.originalUrl);
+            const tenantId = await resolveTenantFromUrl(requestData.originalState || requestData.originalUrl || req.originalUrl || req?.query?.state);
 
             await setContext({ tenantId }, async () => {
                 try {
@@ -253,6 +252,8 @@ async function sendAuthLog(payload: any): Promise<void> {
 }
 
 async function validateEmailAccess(email: string, tenantId: string): Promise<{ allowed: boolean; message?: string }> {
+    console.log("email", email)
+    console.log("tenantId", tenantId)
     try {
         const allowedDomain = process.env.GOOGLE_DOMAIN_NAME;
 

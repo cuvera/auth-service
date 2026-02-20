@@ -333,6 +333,7 @@ export const getUsersByEmailIds = catchAsync(async (req: Request, res: Response)
     designation: user.designation,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+    tenantId: user?.tenantId,
   }));
 
   const response: IApiResponse<{ users: IUserWithRolesResponse[]; requestedCount: number; foundCount: number }> = {

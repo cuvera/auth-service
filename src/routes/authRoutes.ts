@@ -10,7 +10,9 @@ import {
     samlAuth,
     samlCallback,
     getAuthProviders,
-    authorize
+    authorize,
+    googleCalendarAuth
+
 } from '../controllers/authController';
 import { protect } from '../middlewares/auth';
 
@@ -267,6 +269,19 @@ router.get('/providers', getAuthProviders);
  *         description: Redirect to Google OAuth
  */
 router.get('/google', googleAuth);
+
+
+/**
+ * @swagger
+ * /auth/google/calendar:
+ *   get:
+ *     summary: Initiate Google OAuth authentication
+ *     tags: [Authentication]
+ *     responses:
+ *       302:
+ *         description: Redirect to Google OAuth
+ */
+router.get('/google/calendar', googleCalendarAuth);
 
 /**
  * @swagger

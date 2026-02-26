@@ -4,6 +4,8 @@ import { connectionManager } from '@cuvera/commons';
 export interface ITenantDomain {
     domain: string;
     tenantId: string;
+    botEmail: string;
+    botPassword: string;
 }
 
 export const tenantDomainSchema = new Schema<ITenantDomain>(
@@ -18,6 +20,14 @@ export const tenantDomainSchema = new Schema<ITenantDomain>(
         tenantId: {
             type: String,
             required: [true, 'Tenant ID is required'],
+        },
+        botEmail: {
+            type: String,
+            required: [true, 'Bot email is required'],
+        },
+        botPassword: {
+            type: String,
+            required: [true, 'Bot password is required'],
         },
     },
     {

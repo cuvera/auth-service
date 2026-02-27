@@ -39,7 +39,7 @@ export class PassportAuthService {
         };
 
         if (this.isIOS(req)) {
-            options.prompt = "select_account";
+            options.prompt = "consent select_account";
         }
 
         return passport.authenticate('google', options);
@@ -67,7 +67,7 @@ export class PassportAuthService {
             state: Buffer.from(JSON.stringify(stateData)).toString('base64'),
         };
         if (this.isIOS(req)) {
-            options.prompt = "select_account";
+            options.prompt = "consent select_account";
         }
         return passport.authenticate('google', options);
     }

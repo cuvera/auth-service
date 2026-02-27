@@ -6,6 +6,13 @@ export const getAllTenants = async () => {
     return tenants;
 };
 
+export const getTenantByDomain = async (domain: string) => {
+    const TenantDomainModel = await getTenantDomainModel();
+    const tenant = await TenantDomainModel.findOne({ domain }).select('logo favicon -_id');
+    return tenant;
+};
+
 export default {
     getAllTenants,
+    getTenantByDomain,
 };

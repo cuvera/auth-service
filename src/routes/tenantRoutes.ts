@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', getAllTenants);
 
 // get tenant by domain name
-router.get('/:domain', getTenantByDomain);
+router.get('/logo', getTenantByDomain);
 
 /**
  * @swagger

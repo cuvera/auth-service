@@ -15,7 +15,7 @@ export const getAllTenants = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const getTenantByDomain = catchAsync(async (req: Request, res: Response) => {
-    const { domain } = req.params;
+    const domain = req.query.domain as string;
     const tenant = await tenantService.getTenantByDomain(domain);
 
     if (!tenant) {

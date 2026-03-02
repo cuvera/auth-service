@@ -1,13 +1,17 @@
 import { Schema, Model } from 'mongoose';
 import { connectionManager } from '@cuvera/commons';
 
+interface IBranding {
+    logo: string;
+    favicon: string;
+    icon: string;
+}
 export interface ITenantDomain {
     domain: string;
     tenantId: string;
     botEmail: string;
     botPassword: string;
-    logo: string;
-    favicon: string;
+    branding: IBranding;
 }
 
 export const tenantDomainSchema = new Schema<ITenantDomain>(
@@ -31,12 +35,17 @@ export const tenantDomainSchema = new Schema<ITenantDomain>(
             type: String,
             required: [true, 'Bot password is required'],
         },
-        logo: {
-            type: String,
-        },
-        favicon: {
-            type: String,
-        },
+        branding: {
+            logo: {
+                type: String,
+            },
+            favicon: {
+                type: String,
+            },
+            icon: {
+                type: String,
+            },
+        }
     },
     {
         timestamps: true,

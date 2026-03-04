@@ -8,7 +8,7 @@ export const getAllTenants = async () => {
 
 export const getTenantByDomain = async (domain: string) => {
     const TenantDomainModel = await getTenantDomainModel();
-    const tenant = await TenantDomainModel.findOne({ domain }).select('branding -_id');
+    const tenant = await TenantDomainModel.findOne({ domain }).select('branding botName botEmail -_id');
     return tenant;
 };
 

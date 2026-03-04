@@ -12,6 +12,7 @@ export interface ITenantDomain {
     botEmail: string;
     botPassword: string;
     branding: IBranding;
+    botName: string;
 }
 
 export const tenantDomainSchema = new Schema<ITenantDomain>(
@@ -34,6 +35,10 @@ export const tenantDomainSchema = new Schema<ITenantDomain>(
         botPassword: {
             type: String,
             required: [true, 'Bot password is required'],
+        },
+        botName: {
+            type: String,
+            required: [true, 'Bot name is required'],
         },
         branding: {
             logo: {

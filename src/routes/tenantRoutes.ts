@@ -1,10 +1,14 @@
 import express from 'express';
-import { getAllTenants, getTenantByDomain } from '../controllers/tenantController';
+import { getAllTenants, getTenantByDomain, getTenantById } from '../controllers/tenantController';
 
 const router = express.Router();
 
 // Internal route for getting all tenants (not exposed in Swagger to avoid public access)
 router.get('/', getAllTenants);
+
+// get tenant by id
+router.get('/:tenantId', getTenantById);
+
 
 // get tenant by domain name
 router.get('/logo', getTenantByDomain);

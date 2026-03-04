@@ -12,7 +12,14 @@ export const getTenantByDomain = async (domain: string) => {
     return tenant;
 };
 
+export const getTenantById = async (tenantId: string) => {
+    const TenantDomainModel = await getTenantDomainModel();
+    const tenant = await TenantDomainModel.findOne({ tenantId }).select('-botPassword');
+    return tenant;
+};
+
 export default {
     getAllTenants,
     getTenantByDomain,
+    getTenantById,
 };

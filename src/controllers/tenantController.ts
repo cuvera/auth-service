@@ -32,3 +32,22 @@ export const getTenantByDomain = catchAsync(async (req: Request, res: Response) 
         },
     });
 });
+
+export const getTenantById = catchAsync(async (req: Request, res: Response) => {
+    const tenantId = req.params.tenantId;
+    const tenant = await tenantService.getTenantById(tenantId);
+
+    if (!tenant) {
+        return res.status(404).json({
+            status: 'fail',
+            message: 'Tenant not found'
+        });
+    }
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            tenant,
+        },
+    });
+});

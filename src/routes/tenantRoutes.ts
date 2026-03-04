@@ -6,13 +6,8 @@ const router = express.Router();
 // Internal route for getting all tenants (not exposed in Swagger to avoid public access)
 router.get('/', getAllTenants);
 
-// get tenant by id
-router.get('/:tenantId', getTenantById);
-
-
 // get tenant by domain name
 router.get('/logo', getTenantByDomain);
-
 /**
  * @swagger
  * /tenants/{domain}:
@@ -49,5 +44,9 @@ router.get('/logo', getTenantByDomain);
  *                         favicon:
  *                           type: string
  */
+
+// get tenant by id
+router.get('/:tenantId', getTenantById);
+
 
 export default router;

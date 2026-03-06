@@ -12,6 +12,7 @@ import passport from './config/passport';
 import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
 import whitelistingRoutes from './routes/whitelistingRoutes';
+import tenantRoutes from './routes/tenantRoutes';
 import { globalErrorHandler } from './middlewares/errorHandler';
 import { setupSwagger } from './config/swagger';
 import { AppError } from './utils/appError';
@@ -37,7 +38,10 @@ const corsOptions = {
     'http://localhost:5173/',
     'https://demo.cuvera.ai',
     'https://bull.cuvera.ai',
-    'https://bull.grogenie.ai'
+    'https://bull.grogenie.ai',
+    'https://rootent.cuvera.ai',
+    'https://shadow.cuvera.ai',
+    'https://rootent.cuvera.ai'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -102,6 +106,7 @@ baseRouter.get('/health', (req, res) => {
 baseRouter.use('/api/v1/auth', authRoutes);
 baseRouter.use('/api/v1/users', userRoutes);
 baseRouter.use('/api/v1/whitelisting', whitelistingRoutes);
+baseRouter.use('/api/v1/tenants', tenantRoutes);
 
 app.use('/auth-service', baseRouter);
 

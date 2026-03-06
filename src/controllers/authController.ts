@@ -212,7 +212,6 @@ export const googleCallback = catchAsync(async (req: Request, res: Response, nex
 
         const { user, tokens } = passportAuthService.handleAuthSuccess(req.user);
 
-        // Set refresh token as HTTP-only cookie
         const cookieOptions = {
             expires: new Date(
                 Date.now() + (parseInt(process.env.JWT_COOKIE_EXPIRES_IN!) || 7) * 24 * 60 * 60 * 1000

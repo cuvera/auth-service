@@ -40,7 +40,8 @@ const corsOptions = {
     'https://bull.cuvera.ai',
     'https://bull.grogenie.ai',
     'https://rootent.cuvera.ai',
-    'https://shadow.cuvera.ai'
+    'https://shadow.cuvera.ai',
+    'https://rootent.cuvera.ai'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
